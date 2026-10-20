@@ -45,6 +45,7 @@ export function MeliConnection({ status }: { status: MeliStatus }) {
   const router = useRouter();
   const params = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const [origin, setOrigin] = useState<{ host: string; protocol: string } | null>(null);
   useEffect(() => setOrigin({ host: window.location.host, protocol: window.location.protocol }), []);
 
@@ -52,8 +53,14 @@ export function MeliConnection({ status }: { status: MeliStatus }) {
   useEffect(() => {
     const result = params.get("meli");
     if (!result) return;
-    if (result === "ok") toast.success("¡Listo! Mercado Libre quedó conectado.");
-    else toast.error(MELI_ERROR_MESSAGES[(params.get("code") as MeliErrorCode) ?? "UNKNOWN"] ?? "Error");
+    if (result === "ok") {
+      toast.success("¡Listo! Mercado Libre quedó conectado.");
+      setLastError(null);
+    } else {
+      setLastError(
+        params.get("detail") ?? MELI_ERROR_MESSAGES[(params.get("code") as MeliErrorCode) ?? "UNKNOWN"] ?? "Error",
+      );
+    }
     router.replace("/ajustes#mercado-libre");
   }, [params, router]);
 
@@ -102,7 +109,23 @@ export function MeliConnection({ status }: { status: MeliStatus }) {
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="text-sm">
+      <CardContent className="grid gap-4 text-sm">
+        {lastError && (
+          <div role="alert" className="flex gap-2 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-red-900 dark:text-red-200">
+            <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+            <div className="grid gap-1">
+              <p className="font-medium">No se pudo conectar</p>
+              <p className="break-words">{lastError}</p>
+              {/redirect|uri/i.test(lastError) && (
+                <p>
+                  Revisá que en tu app de Mercado Libre la <b>URI de redirect</b> sea exactamente{" "}
+                  <code className="rounded bg-background px-1 break-all">{status.redirectUri}</code> (sin espacios ni
+                  barra al final).
+                </p>
+              )}
+            </div>
+          </div>
+        )}
         {status.connected ? (
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-muted-foreground">Ya podés buscar precios con la lupa en Insumos e Impresión.</p>
