@@ -115,13 +115,13 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Money value={h.packPrice} />
+                          <Money value={h.packPrice.toString()} />
                           {!D(h.packQuantity).eq(1) && (
                             <span className="text-muted-foreground"> / {formatNumber(h.packQuantity)}</span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Money value={supplyUnitCost(h)} />
+                          <Money value={supplyUnitCost(h).toString()} />
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {change && !change.isZero() ? (

@@ -220,11 +220,11 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="text-3xl font-semibold text-primary">
-              {unitCost ? <Money value={unitCost} /> : "—"}
+              {unitCost ? <Money value={unitCost.toString()} /> : "—"}
             </div>
             {unitCost && price && qty && (
               <p className="text-xs text-muted-foreground">
-                <Money value={price} /> ÷ {qty.toString().replace(".", ",")} {usageUnit}
+                <Money value={price.toString()} /> ÷ {qty.toString().replace(".", ",")} {usageUnit}
               </p>
             )}
             <Button type="submit" disabled={pending}>

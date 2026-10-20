@@ -86,7 +86,7 @@ export function StatCard({
   icon: Icon,
   tone = "default",
 }: {
-  label: string;
+  label: React.ReactNode;
   value: React.ReactNode;
   hint?: React.ReactNode;
   icon?: LucideIcon;

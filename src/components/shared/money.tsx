@@ -26,7 +26,8 @@ export function Money({
   className,
   decimals = 2,
 }: {
-  value: DecimalInput | null | undefined;
+  /** string/number: un Decimal no puede cruzar de Server a Client Component (usá .toString()). */
+  value: string | number | null | undefined;
   className?: string;
   decimals?: number;
 }) {
