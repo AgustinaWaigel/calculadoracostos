@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Field } from "@/components/shared/ui-bits";
 import { useAction } from "@/components/shared/use-action";
@@ -30,8 +30,7 @@ async function resizeImage(file: File, max = 256): Promise<string> {
 export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
   const form = useForm<BusinessInput, unknown, z.output<typeof businessSchema>>({
     resolver: zodResolver(businessSchema),
-    defaultValues: defaults,
-  });
+    defaultValues: defaults });
   const { register, control, formState, getValues, setError, setValue, watch } = form;
   const { pending, run } = useAction<BusinessInput>(setError);
   const errors = formState.errors;
@@ -47,7 +46,6 @@ export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
       <Card>
         <CardHeader>
           <CardTitle>Tu emprendimiento</CardTitle>
-          <CardDescription>Aparece en los presupuestos.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="flex items-center gap-3 sm:col-span-2">
@@ -112,7 +110,6 @@ export function BusinessForm({ defaults }: { defaults: BusinessInput }) {
       <Card>
         <CardHeader>
           <CardTitle>Precios e impuestos</CardTitle>
-          <CardDescription>Valores por defecto para todos los productos.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field label="Condición frente a AFIP/ARCA" error={errors.taxCondition?.message}>

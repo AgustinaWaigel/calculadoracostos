@@ -4,7 +4,7 @@ import { useFieldArray, useForm } from "react-hook-form";
 import { Loader2Icon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAction } from "@/components/shared/use-action";
 import { saveVolumeTiers } from "@/actions/settings";
 import { toInputString } from "@/lib/money";
@@ -16,9 +16,7 @@ interface TierForm {
 export function VolumeTiersForm({ tiers }: { tiers: { minQuantity: number; discountPercent: string }[] }) {
   const form = useForm<TierForm>({
     defaultValues: {
-      tiers: tiers.map((t) => ({ minQuantity: String(t.minQuantity), discountPercent: toInputString(t.discountPercent) })),
-    },
-  });
+      tiers: tiers.map((t) => ({ minQuantity: String(t.minQuantity), discountPercent: toInputString(t.discountPercent) })) } });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "tiers" });
   const { pending, run } = useAction();
 
@@ -26,7 +24,6 @@ export function VolumeTiersForm({ tiers }: { tiers: { minQuantity: number; disco
     <Card>
       <CardHeader>
         <CardTitle>Descuentos por volumen</CardTitle>
-        <CardDescription>Desde cuántas unidades aplica cada descuento.</CardDescription>
       </CardHeader>
       <CardContent>
         <form

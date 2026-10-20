@@ -4,7 +4,7 @@ import { useState } from "react";
 import { PlusIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { MarginTooltip } from "@/components/products/margin-tooltip";
@@ -54,8 +54,7 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
       }),
       labor: n(minutes)?.gt(0) && n(hourly) ? [{ hourlyRate: n(hourly)!, minutes: n(minutes)! }] : [],
       batchYield: n(yieldQty)?.gt(0) ? n(yieldQty)! : 1,
-      wastePercent: n(waste) ?? 0,
-    });
+      wastePercent: n(waste) ?? 0 });
     total = cost.total;
     const m = n(margin) ?? 0;
     price = priceFromCost(cost.total, m, "MARGIN");
@@ -63,8 +62,7 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
       unitCost: cost.total,
       targetProfit: price.minus(cost.total),
       channel: { name: "ML", commissionPercent: n(commission) ?? 0 },
-      taxCondition: "MONOTRIBUTO",
-    }).price;
+      taxCondition: "MONOTRIBUTO" }).price;
   } catch {
     // Datos incompletos o margen >= 100%: no mostramos precio.
   }
@@ -73,7 +71,6 @@ export function QuickCalculator({ compact = false }: { compact?: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle>Calculadora rápida</CardTitle>
-        <CardDescription>Sacá una cuenta sin guardar nada.</CardDescription>
         <CardAction>
         <Button
           variant="ghost"

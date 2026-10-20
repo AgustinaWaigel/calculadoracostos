@@ -14,16 +14,23 @@ interface MeliConfig {
   redirectUri: string;
 }
 
-export function getMeliConfig(): MeliConfig | null {
+/**
+ * Credenciales de la app de ML: primero el .env; si no están, las cargadas desde Ajustes.
+ * Solo se leen en el servidor.
+ */
+export async function getMeliConfig(): Promise<(MeliConfig & { source: "env" | "app" }) | null> {
   const clientId = process.env.MELI_CLIENT_ID;
   const clientSecret = process.env.MELI_CLIENT_SECRET;
   const redirectUri = process.env.MELI_REDIRECT_URI;
-  if (!clientId || !clientSecret || !redirectUri) return null;
-  return { clientId, clientSecret, redirectUri };
+  if (clientId && clientSecret && redirectUri) return { clientId, clientSecret, redirectUri, source: "env" };
+  const saved = await db.meliAppConfig.findUnique({ where: { id: "singleton" } });
+  return saved
+    ? { clientId: saved.clientId, clientSecret: saved.clientSecret, redirectUri: saved.redirectUri, source: "app" }
+    : null;
 }
 
-function requireConfig(): MeliConfig {
-  const cfg = getMeliConfig();
+async function requireConfig(): Promise<MeliConfig> {
+  const cfg = await getMeliConfig();
   if (!cfg) throw new MeliError("NOT_CONFIGURED");
   return cfg;
 }
@@ -32,7 +39,7 @@ const base64url = (buf: Buffer) => buf.toString("base64url");
 
 /** Arma la URL de autorización con state (anti-CSRF) y PKCE. */
 export async function createAuthorizationUrl(): Promise<string> {
-  const cfg = requireConfig();
+  const cfg = await requireConfig();
   const state = base64url(randomBytes(24));
   const verifier = base64url(randomBytes(48));
   const challenge = base64url(createHash("sha256").update(verifier).digest());
@@ -111,7 +118,7 @@ async function saveToken(t: TokenResponse) {
 
 /** Paso 2 del OAuth: canjea el code por tokens y los guarda en la base. */
 export async function handleCallback(code: string, state: string): Promise<void> {
-  const cfg = requireConfig();
+  const cfg = await requireConfig();
   const saved = await db.meliOAuthState.findUnique({ where: { state } });
   if (!saved) throw new MeliError("UNAUTHORIZED", "El inicio de sesión expiró o no es válido. Probá de nuevo.");
   await db.meliOAuthState.delete({ where: { state } });
@@ -135,7 +142,7 @@ let refreshing: Promise<string | null> | null = null;
  * null = no hay cuenta conectada (las consultas se intentan sin token).
  */
 export async function getValidAccessToken(): Promise<string | null> {
-  const cfg = getMeliConfig();
+  const cfg = await getMeliConfig();
   if (!cfg) return null;
   const token = await db.meliToken.findUnique({ where: { id: "singleton" } });
   if (!token) return null;
@@ -175,10 +182,13 @@ export async function disconnect() {
 }
 
 export async function getMeliStatus() {
-  const configured = getMeliConfig() !== null;
+  const cfg = await getMeliConfig();
+  const configured = cfg !== null;
   const token = configured ? await db.meliToken.findUnique({ where: { id: "singleton" } }) : null;
   return {
     configured,
+    source: cfg?.source ?? null,
+    redirectUri: cfg?.redirectUri ?? null,
     connected: !!token,
     nickname: token?.nickname ?? null,
     expiresAt: token?.expiresAt.toISOString() ?? null,

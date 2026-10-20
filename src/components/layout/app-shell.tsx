@@ -7,7 +7,7 @@ import { CalculatorIcon, MenuIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { NAV_ITEMS, isActive } from "./nav-items";
+import { ACCENTS, NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
 
@@ -35,13 +35,18 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors",
-              active
-                ? "bg-primary/10 font-medium text-primary"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors",
+              active ? cn(ACCENTS[item.accent].bg, "font-semibold text-foreground") : "text-foreground/80 hover:bg-muted",
             )}
           >
-            <item.icon className="size-4" />
+            <span
+              className={cn(
+                "grid size-7 place-items-center rounded-md",
+                active ? ACCENTS[item.accent].solid : cn(ACCENTS[item.accent].bg, ACCENTS[item.accent].text),
+              )}
+            >
+              <item.icon className="size-4" />
+            </span>
             {item.label}
           </Link>
         );
@@ -103,11 +108,18 @@ export function AppShell({ children, businessName }: { children: React.ReactNode
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 py-2 text-[11px]",
-                active ? "text-primary" : "text-muted-foreground",
+                "flex flex-col items-center gap-0.5 py-1.5 text-[11px]",
+                active ? "font-semibold text-foreground" : "text-muted-foreground",
               )}
             >
-              <item.icon className="size-5" />
+              <span
+                className={cn(
+                  "grid h-7 w-12 place-items-center rounded-full transition-colors",
+                  active && ACCENTS[item.accent].solid,
+                )}
+              >
+                <item.icon className="size-5" />
+              </span>
               {item.label}
             </Link>
           );

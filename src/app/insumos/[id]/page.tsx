@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertTriangleIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/ui-bits";
@@ -26,9 +26,7 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
       where: { id },
       include: {
         priceHistory: { orderBy: { recordedAt: "asc" } },
-        usedIn: { include: { product: { select: { id: true, name: true } } } },
-      },
-    }),
+        usedIn: { include: { product: { select: { id: true, name: true } } } } } }),
     db.supply.findMany({ where: { category: { not: null } }, distinct: ["category"], select: { category: true } }),
   ]);
   if (!supply) notFound();
@@ -39,8 +37,7 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
     return {
       date: h.recordedAt.toISOString(),
       unitCost: unit.toNumber(),
-      unitCostUsd: h.usdRate ? unit.div(h.usdRate).toNumber() : null,
-    };
+      unitCostUsd: h.usdRate ? unit.div(h.usdRate).toNumber() : null };
   });
   const history = [...supply.priceHistory].reverse();
 
@@ -80,15 +77,13 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
           packPrice: supply.packPrice.toString(),
           supplier: supply.supplier,
           url: supply.url,
-          meliItemId: supply.meliItemId,
-        }}
+          meliItemId: supply.meliItemId }}
       />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_340px]">
         <Card>
           <CardHeader>
             <CardTitle>Evolución del precio</CardTitle>
-            <CardDescription>Costo por {supply.usageUnit} en cada actualización.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <PriceHistoryChart points={points} />

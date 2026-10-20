@@ -4,8 +4,8 @@ import { useState } from "react";
 import { PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field } from "@/components/shared/ui-bits";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, InfoTooltip } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { LaborProfileDialog } from "./labor-profile-dialog";
 import { suggestedHourlyRate } from "@/lib/calc/labor";
@@ -27,7 +27,6 @@ export function HourlyRateCalculator() {
     <Card>
       <CardHeader>
         <CardTitle>¿Cuánto vale tu hora?</CardTitle>
-        <CardDescription>Partí de lo que querés ganar por mes.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -41,7 +40,12 @@ export function HourlyRateCalculator() {
             />
           </Field>
           <Field
-            label="Horas por semana"
+            label={
+              <span className="flex items-center gap-1">
+                Horas por semana
+                <InfoTooltip>Contá solo las horas que producís: si 10 de 40 se van en redes y compras, poné 30.</InfoTooltip>
+              </span>
+            }
             htmlFor="calc-hours"
             hint={hoursPerMonth ? `≈ ${hoursPerMonth.toDecimalPlaces(0).toString()} horas por mes` : undefined}
           >
@@ -69,10 +73,6 @@ export function HourlyRateCalculator() {
             />
           )}
         </div>
-        <p className="text-xs text-muted-foreground text-pretty">
-          Tené en cuenta que no todas las horas son productivas: atención al cliente, compras y redes también
-          llevan tiempo. Si producís 30 de 40 horas, cargá 30.
-        </p>
       </CardContent>
     </Card>
   );

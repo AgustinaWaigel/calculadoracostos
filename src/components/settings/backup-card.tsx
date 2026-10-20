@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { DownloadIcon, Loader2Icon, UploadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,9 +14,9 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { importBackup, importSuppliesCsv } from "@/actions/backup";
+import { InfoTooltip } from "@/components/shared/ui-bits";
 
 export function BackupCard() {
   const router = useRouter();
@@ -41,7 +41,6 @@ export function BackupCard() {
     <Card>
       <CardHeader>
         <CardTitle>Backup de datos</CardTitle>
-        <CardDescription>Exportá todo para guardarlo o pasarlo a otra compu.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 text-sm">
         <div className="flex flex-wrap gap-2">
@@ -68,11 +67,10 @@ export function BackupCard() {
           <Button variant="secondary" onClick={() => csvRef.current?.click()} disabled={busy}>
             <UploadIcon /> Importar insumos (CSV)
           </Button>
+          <InfoTooltip className="self-center">
+            Mismas columnas que el CSV exportado. Si un insumo ya existe (mismo nombre), se actualiza su precio.
+          </InfoTooltip>
         </div>
-        <p className="text-xs text-muted-foreground text-pretty">
-          El CSV de insumos usa las columnas: nombre; tipo; categoria; unidad_compra; unidad_uso; cantidad_paquete;
-          precio_paquete; proveedor; link. Si un insumo ya existe (mismo nombre) se actualiza su precio.
-        </p>
         <input
           ref={jsonRef}
           type="file"

@@ -17,19 +17,20 @@ export function DolarCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DollarSignIcon className="size-4" /> Dólar hoy
+          <span className="grid size-7 place-items-center rounded-lg bg-green-600 text-white">
+            <DollarSignIcon className="size-4" />
+          </span>
+          Dólar hoy
         </CardTitle>
-        <CardDescription>
-          {updated ? `Actualizado ${timeFmt.format(new Date(updated))} · dolarapi.com` : "Sin datos"}
-        </CardDescription>
+        {updated && <CardDescription>{timeFmt.format(new Date(updated))}</CardDescription>}
       </CardHeader>
       <CardContent>
         {types.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No pudimos traer la cotización. Probá más tarde.</p>
+          <p className="text-sm text-muted-foreground">Sin conexión con dolarapi.com.</p>
         ) : (
           <dl className="grid grid-cols-3 gap-2">
             {types.map((t) => (
-              <div key={t} className="rounded-lg bg-muted/50 p-2 text-center">
+              <div key={t} className="rounded-lg bg-green-500/10 p-2 text-center">
                 <dt className="text-xs text-muted-foreground">{DOLAR_LABELS[t]}</dt>
                 <dd className="font-semibold tabular-nums">{formatMoney(rates[t]!.sell, "ARS", 0)}</dd>
               </div>

@@ -8,7 +8,6 @@ export default function CalculadoraPage() {
     <>
       <PageHeader
         title="Calculadora rápida"
-        description="Para cotizar algo al toque sin cargarlo. Si te sirve, después armalo como producto."
       />
       <QuickCalculator />
     </>

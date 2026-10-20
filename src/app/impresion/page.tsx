@@ -20,7 +20,6 @@ export default async function ImpresionPage() {
     <>
       <PageHeader
         title="Calculadora de impresión"
-        description="Cuánta tinta gastás por hoja según el precio de tus botes y cuánto cubre la impresión."
       />
       <PrintCalculator
         papers={papers}

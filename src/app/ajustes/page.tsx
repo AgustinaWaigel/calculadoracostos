@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { PencilIcon, PlusIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/shared/ui-bits";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { BusinessForm } from "@/components/settings/business-form";
@@ -29,8 +29,11 @@ export default async function AjustesPage() {
 
   return (
     <>
-      <PageHeader title="Ajustes" description="Datos del emprendimiento, impuestos, canales e integraciones." />
+      <PageHeader title="Ajustes" />
       <div className="grid gap-6">
+        <Suspense>
+          <MeliConnection status={meliStatus} />
+        </Suspense>
         <BusinessForm
           defaults={{
             name: business.name,
@@ -45,15 +48,13 @@ export default async function AjustesPage() {
             defaultMarginPercent: toInputString(business.defaultMarginPercent),
             pricingMode: business.pricingMode,
             roundTo: toInputString(business.roundTo),
-            quoteValidityDays: business.quoteValidityDays,
-          }}
+            quoteValidityDays: business.quoteValidityDays }}
         />
 
         <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <Card id="canales" className="gap-0 self-start py-0">
             <CardHeader className="border-b py-4">
               <CardTitle>Canales de venta</CardTitle>
-              <CardDescription>Comisiones, envíos y ajustes de cada canal.</CardDescription>
             </CardHeader>
             <ul className="divide-y">
               {channels.map((c) => {
@@ -87,8 +88,7 @@ export default async function AjustesPage() {
                         installmentsPercent: c.installmentsPercent.toString(),
                         priceAdjustPercent: c.priceAdjustPercent.toString(),
                         applyIva: c.applyIva,
-                        active: c.active,
-                      }}
+                        active: c.active }}
                       trigger={
                         <Button variant="ghost" size="icon-sm" aria-label={`Editar ${c.name}`}>
                           <PencilIcon />
@@ -115,12 +115,7 @@ export default async function AjustesPage() {
           />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Suspense>
-            <MeliConnection status={meliStatus} />
-          </Suspense>
-          <BackupCard />
-        </div>
+        <BackupCard />
       </div>
     </>
   );

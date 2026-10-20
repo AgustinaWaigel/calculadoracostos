@@ -7,7 +7,7 @@ import { LinkIcon, Loader2Icon, SaveIcon, SearchIcon, StoreIcon } from "lucide-r
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field } from "@/components/shared/ui-bits";
@@ -54,15 +54,13 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
       supplier: defaults?.supplier ?? "",
       url: defaults?.url ?? "",
       meliItemId: defaults?.meliItemId ?? "",
-      priceSource: "MANUAL",
-    },
-  });
+      priceSource: "MANUAL" } });
   const { register, control, formState, setValue, getValues, setError } = form;
   const { pending, run } = useAction<SupplyInput>(setError);
 
-  const [packPrice, packQuantity, usageUnit, name, kind] = useWatch({
+  const [packPrice, packQuantity, usageUnit, name] = useWatch({
     control,
-    name: ["packPrice", "packQuantity", "usageUnit", "name", "kind"],
+    name: ["packPrice", "packQuantity", "usageUnit", "name"],
   });
   const price = parseMoneyInput(String(packPrice ?? ""));
   const qty = parseMoneyInput(String(packQuantity ?? ""));
@@ -145,7 +143,6 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
         <Card>
           <CardHeader>
             <CardTitle>Precio</CardTitle>
-            <CardDescription>Cargalo a mano o traelo de Mercado Libre.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <Tabs defaultValue="manual">
@@ -216,7 +213,6 @@ export function SupplyForm({ defaults, categories }: { defaults?: SupplyFormDefa
         <Card>
           <CardHeader>
             <CardTitle>Costo por {usageUnit || "unidad"}</CardTitle>
-            <CardDescription>{kind === "SERVICE" ? "Servicio" : "Material"}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
             <div className="text-3xl font-semibold text-primary">

@@ -119,8 +119,7 @@ export function MeliSearchDialog({
               {data.stats && <MarketStats stats={data.stats} myPrice={myPrice} myPriceLabel={myPriceLabel} />}
               {data.source === "catalog" && (
                 <p className="text-xs text-muted-foreground">
-                  El buscador de publicaciones no está disponible para tu app: mostramos productos del catálogo de
-                  ML con el precio de la publicación ganadora.
+                  Resultados del catálogo de Mercado Libre.
                 </p>
               )}
               {data.results.length === 0 && (

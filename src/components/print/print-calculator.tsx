@@ -176,9 +176,6 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                 A4 con {REFERENCE_COVERAGE}% de cobertura (norma ISO/IEC 24711).
               </InfoTooltip>
             </CardTitle>
-            <CardDescription>
-              Precio de cada bote o cartucho y cuántas páginas rinde. Con la lupa buscás el precio en Mercado Libre.
-            </CardDescription>
             {inks.fields.length === 0 && (
               <CardAction>
                 <Button size="sm" variant="secondary" onClick={() => inks.replace(toForm(TYPICAL_CMYK))}>
@@ -337,8 +334,13 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
 
         <Card>
           <CardHeader>
-            <CardTitle>Qué vas a imprimir</CardTitle>
-            <CardDescription>Cuánto de la hoja cubre cada color. Elegí un tipo y ajustá.</CardDescription>
+            <CardTitle className="flex items-center gap-1.5">
+              Qué vas a imprimir
+              <InfoTooltip>
+                Cuánto de la hoja cubre cada color. Una carilla de texto es ~5%. Los valores son aproximados: si una
+                tinta se te acaba antes, subile la cobertura.
+              </InfoTooltip>
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
             <div className="flex flex-wrap gap-2">
@@ -401,11 +403,6 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                     </div>
                   );
                 })}
-                <p className="text-xs text-muted-foreground text-pretty">
-                  Referencia: una carilla de texto es ~5%. Una foto a sangre cubre toda la hoja, pero cada color
-                  se usa solo en parte: por eso los valores rondan 30-40%. Son aproximados: si una tinta se te
-                  acaba antes de lo calculado, subile la cobertura.
-                </p>
               </div>
             )}
 
@@ -573,7 +570,6 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
           <Card>
             <CardHeader>
               <CardTitle>Usarlo en tus productos</CardTitle>
-              <CardDescription>Se guarda como insumo (servicio) y lo podés sumar a cualquier receta.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               <Field label="Nombre del insumo" htmlFor="pr-supply-name">
@@ -604,9 +600,6 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                 {saveSupply.pending ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
                 Guardar a <Money value={costToSave.toString()} /> por hoja
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Si ya existe un insumo con ese nombre, se actualiza su precio y queda en el historial.
-              </p>
             </CardContent>
           </Card>
         )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Field } from "@/components/shared/ui-bits";
@@ -14,8 +14,7 @@ import type { EditorOptions } from "./types";
 export function PriceSimulator({
   unitCost,
   channels,
-  settings,
-}: {
+  settings }: {
   unitCost: string;
   channels: EditorOptions["channels"];
   settings: EditorOptions["settings"];
@@ -32,15 +31,13 @@ export function PriceSimulator({
           cost: unitCost,
           vatRate:
             settings.taxCondition === "RESPONSABLE_INSCRIPTO" && channel.applyIva ? pct(settings.ivaPercent) : ZERO,
-          channel,
-        })
+          channel })
       : null;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>¿Cuánto me queda si lo vendo a…?</CardTitle>
-        <CardDescription>Probá un precio y mirá la ganancia neta real.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-3 sm:grid-cols-2">

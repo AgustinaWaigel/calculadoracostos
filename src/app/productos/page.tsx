@@ -19,7 +19,6 @@ export default async function ProductosPage() {
     <>
       <PageHeader
         title="Productos"
-        description="Cada producto se arma con su receta: insumos, tiempo de trabajo y costos fijos."
         actions={
           <Button asChild>
             <Link href="/productos/nuevo">

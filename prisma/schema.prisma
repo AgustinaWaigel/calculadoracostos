@@ -308,3 +308,12 @@ model PrintInk {
   sortOrder   Int      @default(0)
   updatedAt   DateTime @updatedAt
 }
+
+// Datos de la app de Mercado Libre cargados desde Ajustes (alternativa al .env).
+model MeliAppConfig {
+  id           String   @id @default("singleton")
+  clientId     String
+  clientSecret String
+  redirectUri  String
+  updatedAt    DateTime @updatedAt
+}

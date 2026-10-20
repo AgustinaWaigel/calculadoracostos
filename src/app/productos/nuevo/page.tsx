@@ -8,7 +8,7 @@ export default async function NuevoProductoPage() {
   const options = await getEditorOptions();
   return (
     <>
-      <PageHeader title="Nuevo producto" description="El costo se calcula en vivo mientras armás la receta." />
+      <PageHeader title="Nuevo producto" />
       <ProductEditor options={options} />
     </>
   );

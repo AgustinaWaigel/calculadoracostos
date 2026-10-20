@@ -6,7 +6,7 @@ import { PlusIcon } from "lucide-react";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldError, InfoTooltip } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -15,14 +15,12 @@ import { deleteMarketRate, saveMarketRate } from "@/actions/labor";
 import { marketRateSchema, type MarketRateInput } from "@/lib/schemas";
 
 export function MarketRatesCard({
-  rates,
-}: {
+  rates }: {
   rates: { id: string; label: string; hourlyRate: string; source: string | null }[];
 }) {
   const form = useForm<MarketRateInput, unknown, z.output<typeof marketRateSchema>>({
     resolver: zodResolver(marketRateSchema),
-    defaultValues: { label: "", hourlyRate: "", source: "" },
-  });
+    defaultValues: { label: "", hourlyRate: "", source: "" } });
   const { pending, run } = useAction<MarketRateInput>(form.setError);
   const errors = form.formState.errors;
 
@@ -36,7 +34,6 @@ export function MarketRatesCard({
             estás por debajo del mercado.
           </InfoTooltip>
         </CardTitle>
-        <CardDescription>Para comparar tu valor hora con el mercado.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3">
         {rates.length === 0 && (

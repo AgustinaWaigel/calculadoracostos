@@ -54,6 +54,9 @@ export interface MeliItemResponse {
 
 export interface MeliStatus {
   configured: boolean;
+  /** "env": viene del .env; "app": cargada desde Ajustes. */
+  source: "env" | "app" | null;
+  redirectUri: string | null;
   connected: boolean;
   nickname: string | null;
   expiresAt: string | null;

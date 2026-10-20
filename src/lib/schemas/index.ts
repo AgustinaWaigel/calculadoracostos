@@ -308,3 +308,18 @@ export const printAsSupplySchema = z.object({
   name: requiredText("El nombre", 120),
   costPerSheet: decimalField({ min: 0, label: "El costo" }),
 });
+
+// ───────── Mercado Libre (datos de la app) ─────────
+
+export const meliAppConfigSchema = z.object({
+  clientId: z
+    .string()
+    .trim()
+    .regex(/^\d{4,25}$/, "El App ID son solo números (lo ves arriba de todo en tu app de ML)"),
+  clientSecret: z.string().trim().min(10, "Pegá la Secret Key completa"),
+  redirectUri: z
+    .string()
+    .trim()
+    .regex(/^https:\/\/\S+\/api\/meli\/callback$/, "Tiene que ser https://…/api/meli/callback"),
+});
+export type MeliAppConfigInput = z.input<typeof meliAppConfigSchema>;

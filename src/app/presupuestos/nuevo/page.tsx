@@ -16,7 +16,7 @@ export default async function NuevoPresupuestoPage({
 
   return (
     <>
-      <PageHeader title="Nuevo presupuesto" description="Elegí productos: el precio sugerido se completa solo." />
+      <PageHeader title="Nuevo presupuesto" />
       <QuoteEditor
         products={products}
         tiers={tiers}

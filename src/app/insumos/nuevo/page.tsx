@@ -12,7 +12,7 @@ export default async function NuevoInsumoPage() {
   });
   return (
     <>
-      <PageHeader title="Nuevo insumo" description="Material o servicio que usás en tus productos." />
+      <PageHeader title="Nuevo insumo" />
       <SupplyForm categories={categories.map((c) => c.category!)} />
     </>
   );

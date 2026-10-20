@@ -53,7 +53,6 @@ export default async function InsumosPage() {
         <EmptyState
           icon={PackageIcon}
           title="Todavía no cargaste insumos"
-          description="Cargá lo que comprás (papel, pouches, tintas) y también servicios que tercerizás, como impresiones."
           example={<>Ej: “Pouch plastificado A4” · pack de 100 a $28.949 → $289,49 c/u</>}
           action={{ label: "Cargar el primero", href: "/insumos/nuevo" }}
         />

@@ -44,7 +44,7 @@ async function meliGet<T>(path: string, retried = false): Promise<T> {
   if (!res.ok) {
     const code = statusToMeliCode(res.status, !!token);
     // Si la app ni siquiera está configurada, el mensaje útil es ese.
-    if (code === "NOT_CONNECTED" && !getMeliConfig()) throw new MeliError("NOT_CONFIGURED");
+    if (code === "NOT_CONNECTED" && !(await getMeliConfig())) throw new MeliError("NOT_CONFIGURED");
     throw new MeliError(code, undefined, res.status);
   }
   return (await res.json()) as T;

@@ -29,7 +29,6 @@ export default async function ManoDeObraPage() {
     <>
       <PageHeader
         title="Mano de obra"
-        description="Tu tiempo también es un costo. Definí cuánto vale la hora para cada tipo de tarea."
         actions={
           <LaborProfileDialog
             trigger={

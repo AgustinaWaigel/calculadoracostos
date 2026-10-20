@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangleIcon, ScaleIcon } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangleIcon, CoinsIcon, PercentIcon, ScaleIcon, ShapesIcon } from "lucide-react";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,7 +14,6 @@ import { costProduct, getCostingContext, priceProduct, productInclude } from "@/
 import { contextToPlain } from "@/server/editor-options";
 import { db } from "@/lib/db";
 import { formatNumber, formatPercent } from "@/lib/money";
-import { TAX_LABELS } from "@/lib/schemas";
 
 export const metadata = { title: "Precio de venta" };
 
@@ -46,31 +45,29 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
   return (
     <div className="grid gap-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Costo por unidad" value={<Money value={cost.total.toString()} />} />
+        <StatCard label="Costo por unidad" icon={ShapesIcon} accent="violet" value={<Money value={cost.total.toString()} />} />
         <StatCard
           label={
             <span className="flex items-center gap-1">
               {pricing.mode === "MARGIN" ? "Margen" : "Markup"} <MarginTooltip />
             </span>
           }
+          icon={PercentIcon}
+          accent="green"
           value={formatPercent(pricing.percent, 0)}
-          hint={product.marginPercent ? "Propio de este producto" : "El de Ajustes"}
         />
         <StatCard
-          label="Ganancia buscada por unidad"
+          label="Ganancia por unidad"
+          icon={CoinsIcon}
+          accent="emerald"
           value={<Money value={pricing.targetProfit.toString()} />}
-          tone="good"
-          hint="Cada canal la mantiene (o la supera al redondear)"
         />
         <StatCard
           label="Punto de equilibrio"
           icon={ScaleIcon}
+          accent="amber"
           value={pricing.breakEven ? `${formatNumber(pricing.breakEven.units, 0)} u/mes` : "—"}
-          hint={
-            pricing.breakEven
-              ? "para cubrir todos tus costos fijos"
-              : "Cada venta no alcanza a cubrir el costo variable"
-          }
+          hint={pricing.breakEven ? "para cubrir los fijos" : "No cubre el costo variable"}
           tone={pricing.breakEven ? "default" : "bad"}
         />
       </div>
@@ -84,14 +81,11 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
               que en la venta directa. Las comisiones se calculan sobre el precio final.
             </InfoTooltip>
           </CardTitle>
-          <CardDescription>
-            Condición fiscal: {TAX_LABELS[ctx.business.taxCondition]}
-            {isRI && ` (IVA ${formatPercent(ctx.business.ivaPercent, 1)} incluido)`}. Configurá los canales en{" "}
-            <Link href="/ajustes#canales" className="text-primary underline">
-              Ajustes
+          <CardAction>
+            <Link href="/ajustes#canales" className="text-sm text-primary underline">
+              Editar canales
             </Link>
-            .
-          </CardDescription>
+          </CardAction>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           <Table>
@@ -108,7 +102,7 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
             <TableBody>
               {pricing.channels.map((c) =>
                 c.ok ? (
-                  <TableRow key={c.channelName}>
+                  <TableRow key={c.channelName} className={c.type === "DIRECT" ? "bg-green-500/8" : undefined}>
                     <TableCell className="font-medium">
                       {c.channelName}
                       {c.isLoss && (
@@ -117,7 +111,7 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right text-base font-semibold">
+                    <TableCell className="text-right text-lg font-bold text-green-700 dark:text-green-400">
                       <Money value={c.price.toString()} />
                     </TableCell>
                     {isRI && (
@@ -156,9 +150,6 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
               query={product.name}
               myPrice={(meli?.ok ? meli.price : pricing.reference?.price)?.toString() ?? null}
             />
-            <p className="text-xs text-muted-foreground">
-              Buscamos “{product.name}” en ML y comparamos con la mediana del mercado.
-            </p>
           </div>
         </CardContent>
       </Card>
@@ -167,9 +158,6 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
         <Card>
           <CardHeader>
             <CardTitle>Precios por cantidad</CardTitle>
-            <CardDescription>
-              Sobre el precio de {pricing.reference?.channelName ?? "venta directa"}. Editá los tramos en Ajustes.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {pricing.volume.length === 0 ? (
@@ -212,7 +200,6 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
             <Card>
               <CardHeader>
                 <CardTitle>Punto de equilibrio</CardTitle>
-                <CardDescription>Si este fuera tu único producto.</CardDescription>
               </CardHeader>
               <CardContent className="text-sm text-pretty">
                 Cada unidad deja <Money value={pricing.breakEven.contribution.toString()} className="font-semibold" />{" "}

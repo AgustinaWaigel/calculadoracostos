@@ -67,9 +67,8 @@ La integración con Mercado Libre es **opcional**: sin esas variables, la app fu
      - **Opción a.** Corré `npm run dev:https` y usá `https://localhost:3000/api/meli/callback`.
      - **Opción b.** Usá un túnel (ngrok, Cloudflare Tunnel) y su URL `https`.
 3. En **Scopes** alcanza con *read* (lectura). Agregá *offline_access* para que el token se pueda refrescar.
-4. Guardá. Copiá el **App ID** a `MELI_CLIENT_ID` y la **Secret Key** a `MELI_CLIENT_SECRET`.
-5. Poné la misma URL de callback en `MELI_REDIRECT_URI` y reiniciá el servidor.
-6. En la app, andá a **Ajustes → Mercado Libre → Conectar con Mercado Libre** y autorizá.
+4. Guardá. Pegá el **App ID** y la **Secret Key** en **Ajustes → Mercado Libre** (quedan guardados en la base, del lado del servidor). Si preferís, podés ponerlos en el `.env` (`MELI_CLIENT_ID`, `MELI_CLIENT_SECRET`, `MELI_REDIRECT_URI`), que tiene prioridad.
+5. Abrí la app con `npm run dev:https`, entrá a `https://localhost:3000/ajustes` y tocá **Conectar con Mercado Libre**.
 
 ### Cómo funciona la integración
 

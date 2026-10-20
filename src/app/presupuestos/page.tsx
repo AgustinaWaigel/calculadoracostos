@@ -30,7 +30,6 @@ export default async function PresupuestosPage() {
     <>
       <PageHeader
         title="Presupuestos"
-        description="Armá presupuestos con tus productos, descargalos en PDF o mandalos por WhatsApp."
         actions={
           <Button asChild>
             <Link href="/presupuestos/nuevo">

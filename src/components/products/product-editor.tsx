@@ -237,7 +237,6 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
         <Card>
           <CardHeader>
             <CardTitle>Mano de obra</CardTitle>
-            <CardDescription>Minutos de trabajo por lote para cada perfil.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             {options.profiles.length === 0 && (
@@ -304,7 +303,6 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
           <Card>
             <CardHeader>
               <CardTitle>Máquinas</CardTitle>
-              <CardDescription>Amortización según el uso por lote.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3">
               {machines.fields.map((f, i) => {

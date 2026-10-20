@@ -1,6 +1,6 @@
 import { CogIcon, PencilIcon, PlusIcon, ReceiptIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState, InfoTooltip, PageHeader } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
@@ -29,7 +29,6 @@ export default async function CostosFijosPage() {
     <>
       <PageHeader
         title="Costos fijos"
-        description="Lo que pagás todos los meses se reparte entre lo que producís."
         actions={
           <FixedCostDialog
             trigger={
@@ -79,7 +78,6 @@ export default async function CostosFijosPage() {
           <Card className="gap-0 self-start py-0">
             <CardHeader className="border-b py-4">
               <CardTitle>Gastos mensuales</CardTitle>
-              <CardDescription>Desactivá los que no quieras incluir en el prorrateo.</CardDescription>
             </CardHeader>
             <ul className="divide-y">
               {costs.map((c) => (
@@ -98,8 +96,7 @@ export default async function CostosFijosPage() {
                       name: c.name,
                       category: c.category,
                       monthlyAmount: c.monthlyAmount.toString(),
-                      active: c.active,
-                    }}
+                      active: c.active }}
                     trigger={
                       <Button variant="ghost" size="icon-sm" aria-label={`Editar ${c.name}`}>
                         <PencilIcon />
@@ -122,7 +119,6 @@ export default async function CostosFijosPage() {
                 unidades u horas la usa.
               </InfoTooltip>
             </CardTitle>
-            <CardDescription>Amortización por uso.</CardDescription>
           </CardHeader>
           <ul className="divide-y">
             {machines.map((m) => (
@@ -146,8 +142,7 @@ export default async function CostosFijosPage() {
                     name: m.name,
                     price: m.price.toString(),
                     usefulLife: m.usefulLife.toString(),
-                    lifeUnit: m.lifeUnit,
-                  }}
+                    lifeUnit: m.lifeUnit }}
                   trigger={
                     <Button variant="ghost" size="icon-sm" aria-label={`Editar ${m.name}`}>
                       <PencilIcon />
