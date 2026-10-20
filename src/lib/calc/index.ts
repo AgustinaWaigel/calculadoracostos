@@ -7,3 +7,4 @@ export * from "./break-even";
 export * from "./market-stats";
 export * from "./stats";
 export * from "./summary";
+export * from "./print";

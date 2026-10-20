@@ -22,6 +22,7 @@ async function main() {
     prisma.salesChannel.deleteMany(),
     prisma.volumeTier.deleteMany(),
     prisma.business.deleteMany(),
+    prisma.printInk.deleteMany(),
   ]);
 
   await prisma.business.create({
@@ -131,6 +132,16 @@ async function main() {
       { minQuantity: 10, discountPercent: 5 },
       { minQuantity: 50, discountPercent: 10 },
       { minQuantity: 100, discountPercent: 15 },
+    ],
+  });
+
+  // Sistema continuo CMYK (precios de ejemplo: cargá los tuyos).
+  await prisma.printInk.createMany({
+    data: [
+      { name: "Negro", channel: "K", color: "#1f2937", bottlePrice: 12000, yieldPages: 7500, sortOrder: 0 },
+      { name: "Cian", channel: "C", color: "#06b6d4", bottlePrice: 12000, yieldPages: 6000, sortOrder: 1 },
+      { name: "Magenta", channel: "M", color: "#d946ef", bottlePrice: 12000, yieldPages: 6000, sortOrder: 2 },
+      { name: "Amarillo", channel: "Y", color: "#facc15", bottlePrice: 12000, yieldPages: 6000, sortOrder: 3 },
     ],
   });
 

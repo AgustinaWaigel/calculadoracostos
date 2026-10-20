@@ -11,6 +11,7 @@ App web para emprendedores argentinos (imprenta, sublimación, laminado, manuali
 - Precio sugerido por canal (directa, ML Clásica/Premium, mayorista) manteniendo la ganancia neta, con IVA, comisiones, pasarela, cuotas y envío.
 - Descuentos por volumen, punto de equilibrio y simulador "¿cuánto me queda si vendo a $X?".
 - Presupuestos con PDF y envío por WhatsApp.
+- Calculadora de impresión: costo de tinta por hoja según el precio de tus botes, su rendimiento y la cobertura de cada color.
 - Dashboard, calculadora rápida, alertas de precios desactualizados (+30 días), backup JSON/CSV, modo oscuro y PWA instalable.
 
 ## Stack
@@ -101,6 +102,20 @@ También hay tests de formato de moneda es-AR, parseo de montos tipeados ("28.94
 - **Presupuestos.** Guardan una copia de la descripción y el precio: si después sube un insumo, el presupuesto enviado no cambia.
 - **Dólar.** Viene de [dolarapi.com](https://dolarapi.com), cacheado 15 minutos. Cada cambio de precio guarda la cotización MEP del día, para comparar la evolución en USD y detectar insumos que subieron más que el dólar.
 - **Un solo usuario, sin login.** Hay un único registro `Business`.
+
+## Calculadora de impresión
+
+En **Impresión** cargás cada tinta con el precio del bote o cartucho y su **rendimiento en páginas**. Es el dato del fabricante, que siempre se mide en hojas A4 al 5% de cobertura (norma ISO/IEC 24711).
+
+Después elegís qué vas a imprimir: texto, documento, flyer o foto a sangre. También podés ajustar la **cobertura de cada color**, el tamaño de la hoja, la merma por limpiezas de cabezal y el papel.
+
+```
+tinta por hoja = Σ (precio ÷ rendimiento) × (cobertura ÷ 5%) × (área ÷ A4) × (1 + merma)
+```
+
+Ejemplo: botes CMYK de $12.000 (negro rinde 7.500 páginas, colores 6.000), foto A4 a sangre (negro 15%, colores 40%) y 10% de merma → **$58,08 de tinta por hoja**.
+
+El resultado se guarda como insumo (servicio) para usarlo en las recetas. Si ya existe un insumo con el mismo nombre, se actualiza su precio. Las coberturas de los presets son orientativas.
 
 ## Migrar a Postgres o Supabase
 

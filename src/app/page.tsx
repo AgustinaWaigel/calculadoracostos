@@ -208,6 +208,7 @@ export default async function DashboardPage() {
                   { href: "/insumos/nuevo", label: "Cargar un insumo" },
                   { href: "/presupuestos/nuevo", label: "Hacer un presupuesto" },
                   { href: "/mano-de-obra", label: "Calcular mi valor hora" },
+                  { href: "/impresion", label: "Calcular la tinta por hoja" },
                   { href: "/ajustes#canales", label: "Configurar comisiones de ML" },
                 ].map((l) => (
                   <Link

@@ -294,3 +294,17 @@ model MeliOAuthState {
   verifier  String
   createdAt DateTime @default(now())
 }
+
+// ───────── Calculadora de impresión ─────────
+
+model PrintInk {
+  id          String   @id @default(cuid())
+  name        String
+  channel     String   @default("OTRO") // K, C, M, Y, LC, LM, OTRO
+  color       String   @default("#999999")
+  bottlePrice Decimal
+  // Páginas A4 al 5% de cobertura que rinde el bote (dato del fabricante).
+  yieldPages  Int
+  sortOrder   Int      @default(0)
+  updatedAt   DateTime @updatedAt
+}

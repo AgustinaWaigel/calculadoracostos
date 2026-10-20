@@ -273,3 +273,38 @@ export const quoteSchema = z.object({
 });
 export type QuoteInput = z.input<typeof quoteSchema>;
 export type QuoteData = z.output<typeof quoteSchema>;
+
+// ───────── Calculadora de impresión ─────────
+
+export const inkChannels = ["K", "C", "M", "Y", "LC", "LM", "OTRO"] as const;
+
+export const INK_CHANNEL_LABELS: Record<(typeof inkChannels)[number], string> = {
+  K: "Negro",
+  C: "Cian",
+  M: "Magenta",
+  Y: "Amarillo",
+  LC: "Cian claro",
+  LM: "Magenta claro",
+  OTRO: "Otro",
+};
+
+export const printInksSchema = z
+  .array(
+    z.object({
+      name: requiredText("El nombre", 40),
+      channel: z.enum(inkChannels),
+      color: z.string().regex(/^#[0-9a-f]{6}$/i, "Color inválido"),
+      bottlePrice: decimalField({ min: 0, label: "El precio del bote" }),
+      yieldPages: z.coerce
+        .number({ message: "Ingresá un número" })
+        .int("Tiene que ser un número entero")
+        .min(1, "El rendimiento tiene que ser al menos 1 página"),
+    }),
+  )
+  .max(12, "Máximo 12 tintas");
+export type PrintInksInput = z.input<typeof printInksSchema>;
+
+export const printAsSupplySchema = z.object({
+  name: requiredText("El nombre", 120),
+  costPerSheet: decimalField({ min: 0, label: "El costo" }),
+});

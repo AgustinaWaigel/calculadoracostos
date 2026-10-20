@@ -4,6 +4,7 @@ import {
   FileTextIcon,
   HomeIcon,
   PackageIcon,
+  PrinterIcon,
   ReceiptIcon,
   SettingsIcon,
   ShapesIcon,
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/costos-fijos", label: "Costos fijos", icon: ReceiptIcon },
   { href: "/productos", label: "Productos", icon: ShapesIcon, mobile: true },
   { href: "/presupuestos", label: "Presupuestos", icon: FileTextIcon, mobile: true },
+  { href: "/impresion", label: "Impresión", icon: PrinterIcon },
   { href: "/calculadora", label: "Calculadora rápida", icon: CalculatorIcon },
   { href: "/ajustes", label: "Ajustes", icon: SettingsIcon },
 ];
