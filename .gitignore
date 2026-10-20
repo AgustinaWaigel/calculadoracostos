@@ -44,3 +44,6 @@ next-env.d.ts
 # SQLite
 /prisma/*.db
 /prisma/*.db-journal
+
+# Certificados locales de https (mkcert)
+/certificates
