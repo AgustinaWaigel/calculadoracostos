@@ -27,7 +27,7 @@ export function CostBreakdownPie({ slices }: { slices: PieSlice[] }) {
   }
 
   return (
-    <div className="grid items-center gap-4 sm:grid-cols-[160px_1fr]">
+    <div className="grid items-center gap-4">
       <div className="mx-auto size-40">
         <ResponsiveContainer>
           <PieChart>

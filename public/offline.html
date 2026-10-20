@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sin conexión · Calculadora de Costos</title>
+    <style>
+      :root { color-scheme: light dark; --bg: #fff; --fg: #171717; --muted: #737373; --accent: #15803d; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #0a0a0a; --fg: #ededed; --muted: #a3a3a3; --accent: #4ade80; } }
+      body { margin: 0; min-height: 100dvh; display: grid; place-items: center; background: var(--bg); color: var(--fg);
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif; text-align: center; padding: 16px; }
+      img { width: 72px; height: 72px; border-radius: 16px; }
+      p { color: var(--muted); max-width: 32ch; margin: 8px auto 20px; }
+      button { background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px 16px; font-size: 15px; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icons/icon-192.png" alt="" />
+      <h1>Estás sin conexión</h1>
+      <p>Cuando vuelva internet vas a poder seguir calculando costos y precios.</p>
+      <button onclick="location.reload()">Reintentar</button>
+    </main>
+  </body>
+</html>

@@ -57,10 +57,10 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
           hint={product.marginPercent ? "Propio de este producto" : "El de Ajustes"}
         />
         <StatCard
-          label="Ganancia neta por unidad"
+          label="Ganancia buscada por unidad"
           value={<Money value={pricing.targetProfit.toString()} />}
           tone="good"
-          hint="Se mantiene en todos los canales"
+          hint="Cada canal la mantiene (o la supera al redondear)"
         />
         <StatCard
           label="Punto de equilibrio"

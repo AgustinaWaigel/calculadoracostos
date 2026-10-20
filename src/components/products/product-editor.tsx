@@ -177,7 +177,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
             {supplies.fields.map((f, i) => {
               const sel = supplyById.get(values.supplies?.[i]?.supplyId ?? "");
               return (
-                <div key={f.id} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_120px_110px_auto] sm:items-start">
+                <div key={f.id} className="grid grid-cols-[1fr_auto_auto] items-start gap-2 sm:grid-cols-[1fr_120px_110px_auto]">
                   <Controller
                     control={control}
                     name={`supplies.${i}.supplyId`}
@@ -193,25 +193,25 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
                           label: s.name,
                           hint: `${formatMoney(s.unitCost)}/${s.usageUnit}`,
                         }))}
-                        className="col-span-2 sm:col-span-1"
+                        className="col-span-3 sm:col-span-1"
                       />
                     )}
                   />
-                  <div className="order-3 sm:order-none">
+                  <div>
                     <div className="flex items-center gap-1.5">
                       <Input inputMode="decimal" aria-label="Cantidad" {...register(`supplies.${i}.quantity`)} />
                       <span className="w-12 truncate text-xs text-muted-foreground">{sel?.usageUnit}</span>
                     </div>
                     <FieldError message={errors.supplies?.[i]?.quantity?.message} />
                   </div>
-                  <div className="order-4 self-center text-right text-sm sm:order-none">
+                  <div className="self-center text-right text-sm">
                     <Money value={lineCost(live.cost?.lines.supplies, sel?.id) ?? 0} />
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="order-2 self-center sm:order-none"
+                    className="self-center"
                     aria-label="Quitar insumo"
                     onClick={() => supplies.remove(i)}
                   >

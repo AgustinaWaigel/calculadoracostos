@@ -10,7 +10,7 @@ import { getBusiness } from "@/server/costing";
 // Todo sale de la base de datos: nada se prerenderiza en el build.
 export const dynamic = "force-dynamic";
 
-const geistSans = Geist({ variable: "--font-sans", subsets: ["latin"] });
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -30,8 +30,8 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const [rates, business] = await Promise.all([getDolarRates(), getBusiness()]);
   return (
-    <html lang="es-AR" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="es-AR" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="antialiased">
         <Providers rates={rates}>
           <AppShell businessName={business.name}>{children}</AppShell>
         </Providers>
