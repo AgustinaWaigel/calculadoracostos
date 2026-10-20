@@ -1,0 +1,296 @@
+// Montos y cantidades en Decimal (en SQLite y en Postgres) → sin floats.
+// Para migrar a Postgres/Supabase: cambiá provider a "postgresql" y DATABASE_URL.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ───────── Emprendimiento y configuración ─────────
+
+model Business {
+  id                   String       @id @default("singleton")
+  name                 String
+  logoUrl              String?
+  phone                String?
+  email                String?
+  instagram            String?
+  address              String?
+  taxCondition         TaxCondition @default(MONOTRIBUTO)
+  ivaPercent           Decimal      @default(21)
+  monthlyUnitsEstimate Int          @default(100)
+  defaultMarginPercent Decimal      @default(40)
+  pricingMode          PricingMode  @default(MARGIN)
+  roundTo              Decimal      @default(10)
+  quoteValidityDays    Int          @default(7)
+  quoteNumberSeq       Int          @default(0)
+  updatedAt            DateTime     @updatedAt
+}
+
+enum TaxCondition {
+  MONOTRIBUTO
+  RESPONSABLE_INSCRIPTO
+  EXENTO
+}
+
+enum PricingMode {
+  MARGIN
+  MARKUP
+}
+
+// ───────── Insumos ─────────
+
+model Supply {
+  id             String               @id @default(cuid())
+  name           String
+  kind           SupplyKind           @default(MATERIAL)
+  category       String?
+  purchaseUnit   String
+  usageUnit      String               @default("unidad")
+  packQuantity   Decimal
+  packPrice      Decimal
+  supplier       String?
+  url            String?
+  meliItemId     String?
+  priceUpdatedAt DateTime             @default(now())
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  priceHistory   SupplyPriceHistory[]
+  usedIn         ProductSupply[]
+
+  @@index([category])
+}
+
+enum SupplyKind {
+  MATERIAL
+  SERVICE
+}
+
+model SupplyPriceHistory {
+  id           String      @id @default(cuid())
+  supplyId     String
+  supply       Supply      @relation(fields: [supplyId], references: [id], onDelete: Cascade)
+  packPrice    Decimal
+  packQuantity Decimal
+  source       PriceSource @default(MANUAL)
+  usdRate      Decimal?
+  recordedAt   DateTime    @default(now())
+
+  @@index([supplyId, recordedAt])
+}
+
+enum PriceSource {
+  MANUAL
+  MELI_SEARCH
+  MELI_LINK
+  MELI_REFRESH
+  IMPORT
+}
+
+// ───────── Mano de obra ─────────
+
+model LaborProfile {
+  id         String         @id @default(cuid())
+  name       String
+  hourlyRate Decimal
+  color      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  usedIn     ProductLabor[]
+}
+
+model MarketRate {
+  id         String   @id @default(cuid())
+  label      String
+  hourlyRate Decimal
+  source     String?
+  createdAt  DateTime @default(now())
+}
+
+// ───────── Costos fijos y máquinas ─────────
+
+model FixedCost {
+  id            String            @id @default(cuid())
+  name          String
+  category      FixedCostCategory @default(OTROS)
+  monthlyAmount Decimal
+  active        Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+}
+
+enum FixedCostCategory {
+  ALQUILER
+  SERVICIOS
+  INTERNET
+  IMPUESTOS
+  SUSCRIPCIONES
+  OTROS
+}
+
+model Machine {
+  id         String           @id @default(cuid())
+  name       String
+  price      Decimal
+  usefulLife Decimal
+  lifeUnit   LifeUnit
+  createdAt  DateTime         @default(now())
+  usedIn     ProductMachine[]
+}
+
+enum LifeUnit {
+  UNITS
+  HOURS
+}
+
+// ───────── Productos (receta / BOM) ─────────
+
+model Product {
+  id                String           @id @default(cuid())
+  name              String
+  description       String?
+  category          String?
+  batchYield        Decimal          @default(1)
+  wastePercent      Decimal          @default(0)
+  includeFixedCosts Boolean          @default(true)
+  marginPercent     Decimal?
+  pricingMode       PricingMode?
+  duplicatedFromId  String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  supplies          ProductSupply[]
+  labor             ProductLabor[]
+  machines          ProductMachine[]
+  quoteItems        QuoteItem[]
+}
+
+model ProductSupply {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplyId  String
+  supply    Supply  @relation(fields: [supplyId], references: [id], onDelete: Restrict)
+  quantity  Decimal
+
+  @@unique([productId, supplyId])
+}
+
+model ProductLabor {
+  id        String       @id @default(cuid())
+  productId String
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  profileId String
+  profile   LaborProfile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  minutes   Decimal
+
+  @@unique([productId, profileId])
+}
+
+model ProductMachine {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  machineId String
+  machine   Machine @relation(fields: [machineId], references: [id], onDelete: Restrict)
+  usage     Decimal
+
+  @@unique([productId, machineId])
+}
+
+// ───────── Canales de venta y volumen ─────────
+
+model SalesChannel {
+  id                  String      @id @default(cuid())
+  name                String
+  type                ChannelType @default(OTHER)
+  commissionPercent   Decimal     @default(0)
+  fixedFee            Decimal     @default(0)
+  shippingCost        Decimal     @default(0)
+  paymentFeePercent   Decimal     @default(0)
+  installmentsPercent Decimal     @default(0)
+  priceAdjustPercent  Decimal     @default(0)
+  applyIva            Boolean     @default(true)
+  active              Boolean     @default(true)
+  sortOrder           Int         @default(0)
+}
+
+enum ChannelType {
+  DIRECT
+  MELI_CLASSIC
+  MELI_PREMIUM
+  WHOLESALE
+  OTHER
+}
+
+model VolumeTier {
+  id              String  @id @default(cuid())
+  minQuantity     Int     @unique
+  discountPercent Decimal
+}
+
+// ───────── Presupuestos ─────────
+
+model Quote {
+  id              String      @id @default(cuid())
+  number          Int         @unique
+  clientName      String
+  clientPhone     String?
+  clientEmail     String?
+  notes           String?
+  validUntil      DateTime
+  status          QuoteStatus @default(DRAFT)
+  discountPercent Decimal     @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           QuoteItem[]
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+model QuoteItem {
+  id          String   @id @default(cuid())
+  quoteId     String
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  description String
+  quantity    Decimal
+  unitPrice   Decimal
+  sortOrder   Int      @default(0)
+}
+
+// ───────── Mercado Libre (solo servidor) ─────────
+
+model MeliToken {
+  id           String   @id @default("singleton")
+  meliUserId   String
+  nickname     String?
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  updatedAt    DateTime @updatedAt
+}
+
+model MeliCache {
+  key       String   @id
+  payload   String
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}
+
+// Estado OAuth (anti-CSRF) mientras el usuario autoriza en ML.
+model MeliOAuthState {
+  state     String   @id
+  verifier  String
+  createdAt DateTime @default(now())
+}
