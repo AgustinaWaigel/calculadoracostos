@@ -114,6 +114,15 @@ export function parseMoneyInput(raw: string): Decimal | null {
   }
 }
 
+/**
+ * Valor para precargar un input: usa coma decimal ("0,125") para que
+ * parseMoneyInput lo interprete igual que si lo tipeara el usuario.
+ */
+export function toInputString(value: DecimalInput | null | undefined): string {
+  if (value === null || value === undefined || value === "") return "";
+  return D(value).toString().replace(".", ",");
+}
+
 /** Serializa un Decimal para cruzar la frontera servidor → cliente. */
 export function toPlain(value: DecimalInput | null | undefined): string {
   return D(value).toString();

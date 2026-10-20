@@ -1,0 +1,19 @@
+import { PageHeader } from "@/components/shared/ui-bits";
+import { SupplyForm } from "@/components/supplies/supply-form";
+import { db } from "@/lib/db";
+
+export const metadata = { title: "Nuevo insumo" };
+
+export default async function NuevoInsumoPage() {
+  const categories = await db.supply.findMany({
+    where: { category: { not: null } },
+    distinct: ["category"],
+    select: { category: true },
+  });
+  return (
+    <>
+      <PageHeader title="Nuevo insumo" description="Material o servicio que usás en tus productos." />
+      <SupplyForm categories={categories.map((c) => c.category!)} />
+    </>
+  );
+}
