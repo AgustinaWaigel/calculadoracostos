@@ -43,13 +43,48 @@ export function MeliConnection({ status }: { status: MeliStatus }) {
       </CardHeader>
       <CardContent className="grid gap-3 text-sm">
         {!status.configured ? (
-          <p className="text-pretty text-muted-foreground">
-            Falta configurar la app: creala en developers.mercadolibre.com.ar y cargá{" "}
-            <code className="rounded bg-muted px-1">MELI_CLIENT_ID</code>,{" "}
-            <code className="rounded bg-muted px-1">MELI_CLIENT_SECRET</code> y{" "}
-            <code className="rounded bg-muted px-1">MELI_REDIRECT_URI</code> en el archivo <code>.env</code>. Los pasos
-            están en el README. Mientras tanto podés cargar todos los precios a mano.
-          </p>
+          <div className="grid gap-3 text-pretty">
+            <p className="text-muted-foreground">
+              Mercado Libre solo deja buscar precios a aplicaciones registradas. Se configura una sola vez (unos 10
+              minutos) y después buscás precios de tinta, papel o lo que sea desde la app.
+            </p>
+            <ol className="grid list-decimal gap-1.5 pl-5">
+              <li>
+                Entrá a{" "}
+                <a
+                  href="https://developers.mercadolibre.com.ar/devcenter"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary underline"
+                >
+                  developers.mercadolibre.com.ar
+                </a>{" "}
+                con tu cuenta de Mercado Libre y tocá <b>Crear una aplicación</b>.
+              </li>
+              <li>
+                Ponele cualquier nombre (ej: “Mi calculadora”). En <b>URI de redirect</b> pegá:{" "}
+                <code className="rounded bg-muted px-1 break-all">https://localhost:3000/api/meli/callback</code>
+              </li>
+              <li>
+                Cuando la guardes te muestra un <b>App ID</b> (número) y una <b>Secret Key</b>.
+              </li>
+              <li>
+                Abrí el archivo <code className="rounded bg-muted px-1">.env</code> de la carpeta del proyecto y pegalos
+                así:
+                <pre className="mt-1 overflow-x-auto rounded-md bg-muted p-2 text-xs">
+{`MELI_CLIENT_ID="tu App ID"
+MELI_CLIENT_SECRET="tu Secret Key"`}
+                </pre>
+              </li>
+              <li>
+                Cerrá la app y abrila con <code className="rounded bg-muted px-1">npm run dev:https</code> (Mercado
+                Libre exige https). Volvé acá y vas a ver el botón <b>Conectar con Mercado Libre</b>.
+              </li>
+            </ol>
+            <p className="text-xs text-muted-foreground">
+              Mientras tanto, podés escribir los precios a mano o copiarlos de la publicación.
+            </p>
+          </div>
         ) : status.connected ? (
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant="outline" className="border-emerald-500/50 text-emerald-700 dark:text-emerald-400">

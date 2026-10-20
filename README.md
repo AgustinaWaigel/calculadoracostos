@@ -64,7 +64,7 @@ La integración con Mercado Libre es **opcional**: sin esas variables, la app fu
 2. Completá nombre, nombre corto y descripción. En **URIs de redirect** poné la URL de callback:
    - En producción: `https://tu-dominio.com/api/meli/callback`.
    - En desarrollo, ML exige `https`. Tenés dos opciones:
-     - **Opción a.** Corré `npx next dev --experimental-https` y usá `https://localhost:3000/api/meli/callback`.
+     - **Opción a.** Corré `npm run dev:https` y usá `https://localhost:3000/api/meli/callback`.
      - **Opción b.** Usá un túnel (ngrok, Cloudflare Tunnel) y su URL `https`.
 3. En **Scopes** alcanza con *read* (lectura). Agregá *offline_access* para que el token se pueda refrescar.
 4. Guardá. Copiá el **App ID** a `MELI_CLIENT_ID` y la **Secret Key** a `MELI_CLIENT_SECRET`.

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DropletIcon, Loader2Icon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { DropletIcon, Loader2Icon, PlusIcon, SaveIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { MeliSearchDialog } from "@/components/meli/meli-search-dialog";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +81,24 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
   const inks = useFieldArray({ control: form.control, name: "inks" });
   const watchedInks = useWatch({ control: form.control, name: "inks" }) ?? [];
   const saveInks = useAction<InkForm>();
+
+  // Marca/modelo para armar las búsquedas en ML ("tinta Epson 664 cian"). Se recuerda en este navegador.
+  const [inkModel, setInkModel] = useState("");
+  useEffect(() => {
+    try {
+      setInkModel(localStorage.getItem("calc-modelo-tinta") ?? "");
+    } catch {
+      // sin storage: arranca vacío
+    }
+  }, []);
+  function changeInkModel(v: string) {
+    setInkModel(v);
+    try {
+      localStorage.setItem("calc-modelo-tinta", v);
+    } catch {
+      // no pasa nada si no se puede guardar
+    }
+  }
   const inkErrors = form.formState.errors.inks;
 
   // ── Trabajo a imprimir (no se guarda) ──
@@ -156,7 +176,9 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                 A4 con {REFERENCE_COVERAGE}% de cobertura (norma ISO/IEC 24711).
               </InfoTooltip>
             </CardTitle>
-            <CardDescription>Precio de cada bote o cartucho y cuántas páginas rinde.</CardDescription>
+            <CardDescription>
+              Precio de cada bote o cartucho y cuántas páginas rinde. Con la lupa buscás el precio en Mercado Libre.
+            </CardDescription>
             {inks.fields.length === 0 && (
               <CardAction>
                 <Button size="sm" variant="secondary" onClick={() => inks.replace(toForm(TYPICAL_CMYK))}>
@@ -180,7 +202,21 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                 </p>
               )}
               {inks.fields.length > 0 && (
-                <div className="hidden grid-cols-[32px_1fr_130px_110px_100px_auto] gap-2 text-xs text-muted-foreground sm:grid">
+                <Field
+                  label="Marca y modelo de tus tintas"
+                  htmlFor="ink-model"
+                  hint="Se usa para buscar precios: “tinta Epson 664 cian”."
+                >
+                  <Input
+                    id="ink-model"
+                    placeholder="Ej: Epson 664, Epson T544, HP GT53"
+                    value={inkModel}
+                    onChange={(e) => changeInkModel(e.target.value)}
+                  />
+                </Field>
+              )}
+              {inks.fields.length > 0 && (
+                <div className="hidden grid-cols-[32px_1fr_130px_150px_100px_auto] gap-2 text-xs text-muted-foreground sm:grid">
                   <span />
                   <span>Nombre</span>
                   <span>Color</span>
@@ -192,7 +228,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
               {inks.fields.map((f, i) => (
                 <div
                   key={f.id}
-                  className="grid grid-cols-[32px_1fr_auto] items-start gap-2 sm:grid-cols-[32px_1fr_130px_110px_100px_auto]"
+                  className="grid grid-cols-[32px_1fr_auto] items-start gap-2 sm:grid-cols-[32px_1fr_130px_150px_100px_auto]"
                 >
                   {/* Controlado: si queda sin valor, el navegador lo pone en #000000. */}
                   <Controller
@@ -250,7 +286,27 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                     )}
                   />
                   <div className="col-span-2 sm:col-span-1">
-                    <Input inputMode="decimal" aria-label="Precio del bote" placeholder="$ bote" {...form.register(`inks.${i}.bottlePrice`)} />
+                    <div className="flex gap-1">
+                      <Input inputMode="decimal" aria-label="Precio del bote" placeholder="$ bote" {...form.register(`inks.${i}.bottlePrice`)} />
+                      <MeliSearchDialog
+                        title={`Precio de la tinta ${watchedInks[i]?.name ?? ""}`.trim()}
+                        defaultQuery={["tinta", inkModel, watchedInks[i]?.name].filter(Boolean).join(" ")}
+                        myPrice={n(watchedInks[i]?.bottlePrice)?.toString()}
+                        myPriceLabel="Tu precio"
+                        onPick={(listing) => {
+                          form.setValue(`inks.${i}.bottlePrice`, toInputString(listing.price), {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          });
+                          toast.info("Precio traído de Mercado Libre. Revisá el rendimiento y tocá “Guardar tintas”.");
+                        }}
+                        trigger={
+                          <Button type="button" variant="outline" size="icon" aria-label="Buscar el precio en Mercado Libre">
+                            <SearchIcon />
+                          </Button>
+                        }
+                      />
+                    </div>
                     <FieldError message={inkErrors?.[i]?.bottlePrice?.message} />
                   </div>
                   <div>

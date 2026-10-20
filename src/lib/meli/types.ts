@@ -61,7 +61,7 @@ export interface MeliStatus {
 
 export const MELI_ERROR_MESSAGES: Record<MeliErrorCode, string> = {
   NOT_CONFIGURED:
-    "La integración con Mercado Libre no está configurada. Cargá MELI_CLIENT_ID y MELI_CLIENT_SECRET en el .env (ver README). Mientras tanto, cargá el precio a mano.",
+    "Para buscar precios, primero hay que conectar la app con Mercado Libre (se hace una sola vez). Los pasos están en Ajustes → Mercado Libre. Mientras tanto, podés escribir el precio a mano.",
   NOT_CONNECTED:
     "Mercado Libre pide iniciar sesión para esta consulta. Conectá tu cuenta en Ajustes → Mercado Libre, o cargá el precio a mano.",
   UNAUTHORIZED: "La sesión con Mercado Libre venció o fue revocada. Volvé a conectar tu cuenta en Ajustes.",
