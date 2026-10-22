@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaFactor, inkCostPerReferencePage, printCost } from "@/lib/calc/print";
+import { areaFactor, evenCoverage, inkCostPerReferencePage, printCost } from "@/lib/calc/print";
 
 // Botes tipo sistema continuo: negro $12.000 rinde 7.500 pág., colores $12.000 rinden 6.000 pág. (al 5%)
 const K = { name: "Negro", bottlePrice: "12000", yieldPages: "7500" };
@@ -52,5 +52,23 @@ describe("calculadora de impresión", () => {
 
   it("valida la cobertura", () => {
     expect(() => printCost({ inks: [{ ...K, coverage: 120 }] })).toThrow();
+  });
+
+  it("doble faz gasta el doble de tinta, no de papel", () => {
+    const simple = printCost({ inks: [{ ...K, coverage: 10 }], paperCost: 300 });
+    const doble = printCost({ inks: [{ ...K, coverage: 10 }], paperCost: 300, sides: 2 });
+    expect(doble.ink.toString()).toBe(simple.ink.times(2).toString());
+    expect(doble.paper.toString()).toBe("300");
+    expect(doble.sheetsPerSet).toBe(1875); // 7500 / (2 × 2)
+  });
+
+  it("ocupación general: se reparte entre las tintas = promedio de las tintas", () => {
+    const inks = [K, C, M, Y];
+    const each = evenCoverage(50, inks.length); // 12,5% cada una
+    expect(each.toString()).toBe("12.5");
+    const r = printCost({ inks: inks.map((i) => ({ ...i, coverage: each })) });
+    // promedio por página de referencia = (1,6 + 2 + 2 + 2) / 4 = 1,9 → × 50/5 = 19
+    expect(r.ink.toString()).toBe("19");
+    expect(() => evenCoverage(50, 0)).toThrow();
   });
 });

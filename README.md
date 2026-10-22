@@ -11,7 +11,7 @@ App web para emprendedores argentinos (imprenta, sublimación, laminado, manuali
 - Precio sugerido por canal (directa, ML Clásica/Premium, mayorista) manteniendo la ganancia neta, con IVA, comisiones, pasarela, cuotas y envío.
 - Descuentos por volumen, punto de equilibrio y simulador "¿cuánto me queda si vendo a $X?".
 - Presupuestos con PDF y envío por WhatsApp.
-- Calculadora de impresión: costo de tinta por hoja según el precio de tus botes, su rendimiento y la cobertura de cada color.
+- Calculadora de impresión: costo de tinta por hoja según el precio de tus botes, su rendimiento y cuánta tinta lleva la hoja.
 - Dashboard, calculadora rápida, alertas de precios desactualizados (+30 días), backup JSON/CSV, modo oscuro y PWA instalable.
 
 ## Stack
@@ -107,15 +107,15 @@ También hay tests de formato de moneda es-AR, parseo de montos tipeados ("28.94
 
 En **Impresión** cargás cada tinta con el precio del bote o cartucho y su **rendimiento en páginas**. Es el dato del fabricante, que siempre se mide en hojas A4 al 5% de cobertura (norma ISO/IEC 24711).
 
-Después elegís qué vas a imprimir: texto, documento, flyer o foto a sangre. También podés ajustar la **cobertura de cada color**, el tamaño de la hoja, la merma por limpiezas de cabezal y el papel.
+Después elegís qué vas a imprimir: cantidad de hojas, **blanco y negro o color**, la **ocupación de tinta** (10%, 25%, 50%, 75% o 100% de la hoja), tamaño, doble cara, merma por limpiezas de cabezal y papel. La ocupación se reparte en partes iguales entre las tintas que se usan (en blanco y negro, solo las negras), que es lo mismo que costear con el promedio de las tintas.
 
 ```
-tinta por hoja = Σ (precio ÷ rendimiento) × (cobertura ÷ 5%) × (área ÷ A4) × (1 + merma)
+tinta por hoja = Σ (precio ÷ rendimiento) × (cobertura ÷ 5%) × (área ÷ A4) × caras × (1 + merma)
 ```
 
-Ejemplo: botes CMYK de $12.000 (negro rinde 7.500 páginas, colores 6.000), foto A4 a sangre (negro 15%, colores 40%) y 10% de merma → **$58,08 de tinta por hoja**.
+Ejemplo: botes CMYK de $12.000 (negro rinde 7.500 páginas, colores 6.000), hoja A4 a color con 50% de ocupación y 10% de merma → 12,5% por tinta → **$20,90 de tinta por hoja**.
 
-El resultado se guarda como insumo (servicio) para usarlo en las recetas. Si ya existe un insumo con el mismo nombre, se actualiza su precio. Las coberturas de los presets son orientativas.
+El resultado se guarda como insumo (servicio) para usarlo en las recetas. Si ya existe un insumo con el mismo nombre, se actualiza su precio.
 
 ## Base de datos (Supabase)
 

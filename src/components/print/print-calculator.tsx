@@ -5,12 +5,13 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DropletIcon, Loader2Icon, PlusIcon, SaveIcon, SearchIcon, Trash2Icon } from "lucide-react";
+import { DropletIcon, Loader2Icon, MinusIcon, PlusIcon, SaveIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { MeliSearchDialog } from "@/components/meli/meli-search-dialog";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Field, FieldError, InfoTooltip } from "@/components/shared/ui-bits";
@@ -19,10 +20,11 @@ import { Combobox } from "@/components/shared/combobox";
 import { useAction } from "@/components/shared/use-action";
 import { savePrintAsSupply, savePrintInks } from "@/actions/print";
 import {
-  COVERAGE_PRESETS,
+  COVERAGE_LEVELS,
   PAPER_SIZES,
   REFERENCE_COVERAGE,
   areaFactor,
+  evenCoverage,
   printCost,
   type InkChannel,
   type PrintCostResult,
@@ -102,22 +104,14 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
   const inkErrors = form.formState.errors.inks;
 
   // ── Trabajo a imprimir (no se guarda) ──
-  const [presetId, setPresetId] = useState("foto");
-  const preset = COVERAGE_PRESETS.find((p) => p.id === presetId);
-  const [coverage, setCoverage] = useState<Record<string, string>>({});
+  const [color, setColor] = useState(true);
+  const [level, setLevel] = useState<number>(25);
+  const [doubleSided, setDoubleSided] = useState(false);
   const [sizeId, setSizeId] = useState("A4");
   const [custom, setCustom] = useState({ w: "210", h: "297" });
   const [waste, setWaste] = useState("10");
   const [paperId, setPaperId] = useState(papers[0]?.id ?? "none");
-  const [copies, setCopies] = useState("1");
-
-  const coverageOf = (fieldId: string, channel: InkChannel | undefined) =>
-    coverage[fieldId] ?? String(preset?.coverage[channel ?? "OTRO"] ?? 0);
-
-  function applyPreset(id: string) {
-    setPresetId(id);
-    setCoverage({}); // vuelve a los valores del preset para todas las tintas
-  }
+  const [copies, setCopies] = useState(1);
 
   const size = PAPER_SIZES.find((s) => s.id === sizeId);
   const factor =
@@ -133,22 +127,27 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
   let result: PrintCostResult | null = null;
   let error: string | null = null;
   try {
-    const lines = inks.fields.flatMap((f, i) => {
+    // Blanco y negro usa solo las tintas negras; color, todas. La ocupación se reparte en partes iguales.
+    const used = inks.fields.flatMap((f, i) => {
       const ink = watchedInks[i];
       const price = n(ink?.bottlePrice);
       const yieldPages = n(ink?.yieldPages);
-      const cov = n(coverageOf(f.id, ink?.channel));
-      return ink && price && yieldPages?.gt(0) && cov
-        ? [{ id: f.id, name: ink.name || "Tinta", bottlePrice: price, yieldPages, coverage: cov }]
+      return ink && (color || ink.channel === "K") && price && yieldPages?.gt(0)
+        ? [{ id: f.id, name: ink.name || "Tinta", bottlePrice: price, yieldPages }]
         : [];
     });
+    if (!color && used.length === 0 && inks.fields.length > 0) {
+      throw new Error("Para blanco y negro, marcá una de tus tintas como Negro (K).");
+    }
+    const lines = used.map((ink) => ({ ...ink, coverage: evenCoverage(level, used.length) }));
     if (lines.length > 0 && factor) {
       result = printCost({
         inks: lines,
         areaFactor: factor,
         wastePercent: n(waste) ?? 0,
         paperCost: paper?.unitCost ?? 0,
-        copies: Number(n(copies)?.toNumber() ?? 1),
+        sides: doubleSided ? 2 : 1,
+        copies,
       });
     }
   } catch (e) {
@@ -159,7 +158,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
   const sizeLabel = sizeId === "CUSTOM" ? `${custom.w}×${custom.h} mm` : (size?.id ?? "").replace("FOTO", "foto ");
   const [supplyName, setSupplyName] = useState<string | null>(null);
   const [includePaper, setIncludePaper] = useState(false);
-  const defaultName = `Impresión ${sizeLabel} ${preset ? `(${preset.label.toLowerCase()})` : ""}`.trim();
+  const defaultName = `Impresión ${sizeLabel} ${color ? "color" : "B/N"} ${level}%${doubleSided ? " doble faz" : ""}`;
   const saveSupply = useAction();
   const costToSave = result ? (includePaper ? result.perSheet : result.ink) : null;
   const maxLine = result ? Math.max(...result.lines.map((l) => l.cost.toNumber()), 0) : 0;
@@ -337,77 +336,98 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
             <CardTitle className="flex items-center gap-1.5">
               Qué vas a imprimir
               <InfoTooltip>
-                Cuánto de la hoja cubre cada color. Una carilla de texto es ~5%. Los valores son aproximados: si una
-                tinta se te acaba antes, subile la cobertura.
+                Elegí cuántas hojas, si es a color y cuánta tinta lleva. Si las tintas se te acaban antes de lo que
+                dice acá, subí la ocupación.
               </InfoTooltip>
             </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-5">
-            <div className="flex flex-wrap gap-2">
-              {COVERAGE_PRESETS.map((p) => (
-                <button
-                  key={p.id}
+            <Field label="Total de hojas">
+              <div className="flex items-center justify-between gap-3 rounded-xl border bg-muted/40 p-2">
+                <Button
                   type="button"
-                  onClick={() => applyPreset(p.id)}
+                  size="icon-lg"
+                  className="size-14 rounded-xl [&_svg:not([class*='size-'])]:size-6"
+                  aria-label="Una hoja menos"
+                  disabled={copies <= 1}
+                  onClick={() => setCopies((c) => Math.max(1, c - 1))}
+                >
+                  <MinusIcon />
+                </Button>
+                <input
+                  type="number"
+                  min={1}
+                  inputMode="numeric"
+                  aria-label="Total de hojas"
+                  value={copies}
+                  onChange={(e) => setCopies(Math.max(1, Math.floor(Number(e.target.value) || 1)))}
+                  className="w-full min-w-0 bg-transparent text-center text-4xl font-bold text-primary outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <Button
+                  type="button"
+                  size="icon-lg"
+                  className="size-14 rounded-xl [&_svg:not([class*='size-'])]:size-6"
+                  aria-label="Una hoja más"
+                  onClick={() => setCopies((c) => c + 1)}
+                >
+                  <PlusIcon />
+                </Button>
+              </div>
+            </Field>
+
+            <div className="grid grid-cols-2 gap-1 rounded-xl border bg-muted/40 p-1" role="radiogroup" aria-label="Color">
+              {[
+                { value: false, label: "⚫ Blanco y negro" },
+                { value: true, label: "🌈 A color" },
+              ].map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={color === o.value}
+                  onClick={() => setColor(o.value)}
                   className={cn(
-                    "rounded-lg border px-3 py-2 text-left text-sm transition-colors",
-                    presetId === p.id ? "border-primary bg-primary/5" : "hover:bg-muted",
+                    "rounded-lg px-3 py-3 text-sm font-semibold transition-colors",
+                    color === o.value ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted",
                   )}
                 >
-                  <span className="block font-medium">{p.label}</span>
-                  <span className="block text-xs text-muted-foreground">{p.description}</span>
+                  {o.label}
                 </button>
               ))}
             </div>
 
-            {inks.fields.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Cargá tus tintas para ajustar la cobertura de cada color.</p>
-            ) : (
-              <div className="grid gap-3">
-                {inks.fields.map((f, i) => {
-                  const ink = watchedInks[i];
-                  const value = coverageOf(f.id, ink?.channel);
-                  return (
-                    <div key={f.id} className="grid grid-cols-[110px_1fr_76px] items-center gap-3">
-                      <span className="flex items-center gap-2 truncate text-sm">
-                        <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: ink?.color }} />
-                        {ink?.name || "Tinta"}
-                      </span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        step={1}
-                        value={Number(n(value)?.toNumber() ?? 0)}
-                        onChange={(e) => {
-                          setPresetId("custom");
-                          setCoverage((c) => ({ ...c, [f.id]: e.target.value }));
-                        }}
-                        aria-label={`Cobertura de ${ink?.name || "tinta"}`}
-                        className="w-full"
-                        style={{ accentColor: ink?.color }}
-                      />
-                      <div className="flex items-center gap-1">
-                        <Input
-                          inputMode="decimal"
-                          value={value}
-                          onChange={(e) => {
-                            setPresetId("custom");
-                            setCoverage((c) => ({ ...c, [f.id]: e.target.value }));
-                          }}
-                          aria-label={`Porcentaje de ${ink?.name || "tinta"}`}
-                          className="h-7 px-2 text-right"
-                        />
-                        <span className="text-xs text-muted-foreground">%</span>
-                      </div>
-                    </div>
-                  );
-                })}
+            <Field
+              label={
+                <span className="flex items-center gap-1">
+                  Ocupación de tinta
+                  <InfoTooltip>
+                    Cuánto de la hoja se cubre de tinta: 10% es texto, 100% es una foto que cubre toda la hoja. Se
+                    calcula con el promedio de tus tintas{color ? "" : " negras"}.
+                  </InfoTooltip>
+                </span>
+              }
+            >
+              <div className="grid grid-cols-5 gap-1 rounded-xl border bg-muted/40 p-1" role="radiogroup" aria-label="Ocupación de tinta">
+                {COVERAGE_LEVELS.map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    role="radio"
+                    aria-checked={level === l}
+                    onClick={() => setLevel(l)}
+                    className={cn(
+                      "rounded-lg py-2.5 text-sm font-semibold tabular-nums transition-colors",
+                      level === l ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted",
+                    )}
+                  >
+                    {l}%
+                  </button>
+                ))}
               </div>
-            )}
+            </Field>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Tamaño de la hoja">
+              <Field label="Tamaño">
                 <Select value={sizeId} onValueChange={setSizeId}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -422,35 +442,33 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                   </SelectContent>
                 </Select>
               </Field>
-              {sizeId === "CUSTOM" ? (
-                <Field label="Medida (mm)">
+              <label className="flex h-9 items-center justify-between gap-3 self-end rounded-lg border bg-muted/40 px-3 text-sm font-medium">
+                Doble cara
+                <Switch checked={doubleSided} onCheckedChange={setDoubleSided} />
+              </label>
+              {sizeId === "CUSTOM" && (
+                <Field label="Medida (mm)" className="sm:col-span-2">
                   <div className="flex items-center gap-2">
                     <Input inputMode="decimal" aria-label="Ancho en mm" value={custom.w} onChange={(e) => setCustom((c) => ({ ...c, w: e.target.value }))} />
                     ×
                     <Input inputMode="decimal" aria-label="Alto en mm" value={custom.h} onChange={(e) => setCustom((c) => ({ ...c, h: e.target.value }))} />
                   </div>
                 </Field>
-              ) : (
-                <Field
-                  label={
-                    <span className="flex items-center gap-1">
-                      Merma de tinta (%)
-                      <InfoTooltip>
-                        Tinta que se va en limpiezas de cabezal, purgas y pruebas. En sistemas continuos suele andar
-                        entre 10% y 20%.
-                      </InfoTooltip>
-                    </span>
-                  }
-                  htmlFor="pr-waste"
-                >
-                  <Input id="pr-waste" inputMode="decimal" value={waste} onChange={(e) => setWaste(e.target.value)} />
-                </Field>
               )}
-              {sizeId === "CUSTOM" && (
-                <Field label="Merma de tinta (%)" htmlFor="pr-waste2">
-                  <Input id="pr-waste2" inputMode="decimal" value={waste} onChange={(e) => setWaste(e.target.value)} />
-                </Field>
-              )}
+              <Field
+                label={
+                  <span className="flex items-center gap-1">
+                    Merma de tinta (%)
+                    <InfoTooltip>
+                      Tinta que se va en limpiezas de cabezal, purgas y pruebas. En sistemas continuos suele andar
+                      entre 10% y 20%.
+                    </InfoTooltip>
+                  </span>
+                }
+                htmlFor="pr-waste"
+              >
+                <Input id="pr-waste" inputMode="decimal" value={waste} onChange={(e) => setWaste(e.target.value)} />
+              </Field>
               <Field
                 label="Papel"
                 hint={
@@ -475,9 +493,6 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                   ]}
                   searchPlaceholder="Buscar papel…"
                 />
-              </Field>
-              <Field label="Cantidad de hojas" htmlFor="pr-copies">
-                <Input id="pr-copies" type="number" min={1} value={copies} onChange={(e) => setCopies(e.target.value)} />
               </Field>
             </div>
           </CardContent>

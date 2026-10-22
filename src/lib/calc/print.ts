@@ -58,6 +58,8 @@ export interface PrintCostInput {
   wastePercent?: DecimalInput;
   /** Costo del papel por hoja (opcional). */
   paperCost?: DecimalInput;
+  /** Caras impresas por hoja: 2 si es doble faz. */
+  sides?: 1 | 2;
   copies?: number;
 }
 
@@ -83,19 +85,20 @@ export interface PrintCostResult {
 }
 
 /**
- * costo de cada color por hoja = (precio ÷ rendimiento) × (cobertura ÷ 5%) × tamaño × (1 + merma)
+ * costo de cada color por hoja = (precio ÷ rendimiento) × (cobertura ÷ 5%) × tamaño × caras × (1 + merma)
  */
 export function printCost(input: PrintCostInput): PrintCostResult {
   const factor = D(input.areaFactor ?? 1);
   if (factor.lte(0)) throw new RangeError("El tamaño del papel no es válido");
   const waste = pct(input.wastePercent ?? 0).plus(1);
+  const sides = input.sides ?? 1;
   const copies = Math.max(1, Math.floor(input.copies ?? 1));
 
   let sheetsPerSet: number | null = null;
   const lines = input.inks.map((ink) => {
     const coverage = D(ink.coverage);
     if (coverage.lt(0) || coverage.gt(100)) throw new RangeError("La cobertura va de 0% a 100%");
-    const usage = coverage.div(REFERENCE_COVERAGE).times(factor).times(waste); // "páginas de referencia" por hoja
+    const usage = coverage.div(REFERENCE_COVERAGE).times(factor).times(sides).times(waste); // "páginas de referencia" por hoja
     const cost = inkCostPerReferencePage(ink.bottlePrice, ink.yieldPages).times(usage);
     if (usage.gt(0)) {
       const sheets = D(ink.yieldPages).div(usage).floor().toNumber();
@@ -110,38 +113,14 @@ export function printCost(input: PrintCostInput): PrintCostResult {
   return { lines, ink, paper, perSheet, copies, total: perSheet.times(copies), sheetsPerSet };
 }
 
-export interface CoveragePreset {
-  id: string;
-  label: string;
-  description: string;
-  /** Cobertura sugerida por canal de tinta, en %. */
-  coverage: Record<InkChannel, number>;
-}
+/** Ocupación de tinta de la hoja que se puede elegir, en %. */
+export const COVERAGE_LEVELS = [10, 25, 50, 75, 100] as const;
 
-/** Valores orientativos: cada diseño es distinto, ajustalos a tu trabajo. */
-export const COVERAGE_PRESETS: CoveragePreset[] = [
-  {
-    id: "texto",
-    label: "Texto en negro",
-    description: "Una carilla de texto común",
-    coverage: { K: 5, C: 0, M: 0, Y: 0, LC: 0, LM: 0, OTRO: 0 },
-  },
-  {
-    id: "documento",
-    label: "Documento color",
-    description: "Texto con algún gráfico o logo",
-    coverage: { K: 5, C: 5, M: 5, Y: 5, LC: 0, LM: 0, OTRO: 0 },
-  },
-  {
-    id: "flyer",
-    label: "Flyer / tarjetas",
-    description: "Diseño con fondos y colores",
-    coverage: { K: 10, C: 20, M: 20, Y: 20, LC: 10, LM: 10, OTRO: 0 },
-  },
-  {
-    id: "foto",
-    label: "Foto a sangre",
-    description: "Foto que ocupa toda la hoja",
-    coverage: { K: 15, C: 40, M: 40, Y: 40, LC: 30, LM: 30, OTRO: 0 },
-  },
-];
+/**
+ * Reparte la ocupación total de la hoja en partes iguales entre las tintas que se usan.
+ * Da lo mismo que costear con el promedio de las tintas.
+ */
+export function evenCoverage(total: DecimalInput, inkCount: number): Decimal {
+  if (inkCount < 1) throw new RangeError("No hay tintas para repartir la cobertura");
+  return D(total).div(inkCount);
+}

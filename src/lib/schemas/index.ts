@@ -316,7 +316,11 @@ export const meliAppConfigSchema = z.object({
     .string()
     .trim()
     .regex(/^\d{4,25}$/, "El App ID son solo números (lo ves arriba de todo en tu app de ML)"),
-  clientSecret: z.string().trim().min(10, "Pegá la Secret Key completa"),
+  clientSecret: z
+    .string()
+    .trim()
+    .min(10, "Pegá la Secret Key completa")
+    .regex(/^[A-Za-z0-9]+$/, "La Secret Key son solo letras y números (no es una URL); está en tu app de ML"),
   redirectUri: z
     .string()
     .trim()
