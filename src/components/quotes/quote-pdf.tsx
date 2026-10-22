@@ -1,4 +1,5 @@
-import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import path from "node:path";
+import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { quoteTotals } from "@/lib/calc/quote";
 import { D, formatMoney, formatNumber, formatPercent } from "@/lib/money";
 import { formatQuoteNumber } from "@/lib/quote-text";
@@ -23,43 +24,113 @@ export interface QuotePdfData {
   };
 }
 
-const ACCENT = "#15803d";
-const MUTED = "#6b7280";
+// Marca de Alas de Ángel (alasdeangel.com.ar): mismos colores y letras que la web.
+const BRAND = {
+  tinta: "#0B5E41", // verde oscuro: el "negro" de la marca
+  tintaSuave: "#2F6E55",
+  nube: "#F6E7D4", // crema
+  renglon: "#E3CDB6",
+  amanecer: "#7F2350", // vino
+  amanecerFuerte: "#6A1B42",
+  halo: "#B9D53B", // lima
+  lavanda: "#F4A9CB", // rosa
+  cielo: "#F9D5E4", // rosa muy claro
+  menta: "#7CC4A0",
+  frase: "Para escribir, soñar y volar.",
+};
+
+// Las fuentes viajan con la app (licencia OFL): Londrina Solid para títulos y precios, Karla para el resto.
+const fonts = path.join(process.cwd(), "src/assets/fonts");
+Font.register({ family: "Londrina", src: path.join(fonts, "LondrinaSolid-Regular.ttf") });
+Font.register({
+  family: "Karla",
+  fonts: [
+    { src: path.join(fonts, "Karla-400.ttf"), fontWeight: 400 },
+    { src: path.join(fonts, "Karla-700.ttf"), fontWeight: 700 },
+  ],
+});
+Font.registerHyphenationCallback((word) => [word]);
+
+const PAD = 40;
 
 const s = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: "Helvetica", color: "#111827" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 },
-  brand: { flexDirection: "row", alignItems: "center", gap: 10 },
-  logo: { width: 52, height: 52, objectFit: "contain" },
-  businessName: { fontSize: 16, fontFamily: "Helvetica-Bold" },
-  contact: { color: MUTED, marginTop: 2 },
-  title: { fontSize: 20, fontFamily: "Helvetica-Bold", color: ACCENT, textAlign: "right" },
-  meta: { textAlign: "right", color: MUTED, marginTop: 2 },
-  section: { marginBottom: 18 },
-  label: { fontSize: 8, color: MUTED, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 3 },
-  table: { borderTopWidth: 1, borderColor: "#e5e7eb" },
-  row: { flexDirection: "row", borderBottomWidth: 1, borderColor: "#e5e7eb", paddingVertical: 6 },
-  headRow: { flexDirection: "row", paddingVertical: 6, backgroundColor: "#f3f4f6" },
-  th: { fontFamily: "Helvetica-Bold", fontSize: 9 },
-  cDesc: { flex: 1, paddingHorizontal: 6 },
-  cQty: { width: 50, textAlign: "right", paddingHorizontal: 6 },
-  cPrice: { width: 90, textAlign: "right", paddingHorizontal: 6 },
-  cTotal: { width: 90, textAlign: "right", paddingHorizontal: 6 },
-  totals: { marginTop: 10, marginLeft: "auto", width: 220 },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
+  page: { paddingBottom: 90, fontSize: 10, fontFamily: "Karla", color: BRAND.tinta },
+  // Portada en vino con títulos en rosa y texto en crema, como las páginas internas de la web.
+  header: {
+    backgroundColor: BRAND.amanecer,
+    paddingHorizontal: PAD,
+    paddingVertical: 26,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  brand: { flexDirection: "row", alignItems: "center", gap: 12 },
+  logo: { width: 64, height: 64, objectFit: "contain", borderRadius: 8 },
+  businessName: { fontFamily: "Londrina", fontSize: 24, color: BRAND.nube, textTransform: "uppercase" },
+  contact: { color: BRAND.nube, fontSize: 9, marginTop: 1 },
+  title: { fontFamily: "Londrina", fontSize: 28, color: BRAND.lavanda, textAlign: "right", textTransform: "uppercase" },
+  meta: { textAlign: "right", color: BRAND.nube, fontSize: 9, marginTop: 1 },
+  number: { textAlign: "right", color: BRAND.nube, fontFamily: "Londrina", fontSize: 14 },
+  // Cinta de colores debajo de la portada.
+  ribbon: { flexDirection: "row", height: 6 },
+  body: { paddingHorizontal: PAD, paddingTop: 26 },
+  label: {
+    fontSize: 8,
+    fontWeight: 700,
+    color: BRAND.amanecerFuerte,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 3,
+  },
+  clientName: { fontFamily: "Londrina", fontSize: 18, color: BRAND.tinta },
+  muted: { color: BRAND.tintaSuave },
+  section: { marginBottom: 20 },
+  table: { borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: BRAND.tinta },
+  headRow: { flexDirection: "row", paddingVertical: 7, backgroundColor: BRAND.tinta },
+  th: { fontSize: 8, fontWeight: 700, color: BRAND.nube, textTransform: "uppercase", letterSpacing: 0.8 },
+  row: { flexDirection: "row", paddingVertical: 7, borderTopWidth: 1, borderColor: BRAND.renglon },
+  rowAlt: { backgroundColor: BRAND.nube },
+  cDesc: { flex: 1, paddingHorizontal: 8 },
+  cQty: { width: 50, textAlign: "right", paddingHorizontal: 8 },
+  cPrice: { width: 95, textAlign: "right", paddingHorizontal: 8 },
+  cTotal: { width: 95, textAlign: "right", paddingHorizontal: 8, fontWeight: 700 },
+  totals: { marginTop: 12, marginLeft: "auto", width: 230 },
+  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3, paddingHorizontal: 10 },
+  // Franja lima con texto verde oscuro, como el cierre de la web.
   grandTotal: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingTop: 6,
-    marginTop: 4,
-    borderTopWidth: 1,
-    borderColor: "#111827",
-    fontSize: 13,
-    fontFamily: "Helvetica-Bold",
+    alignItems: "center",
+    marginTop: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    backgroundColor: BRAND.halo,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: BRAND.tinta,
   },
-  notes: { marginTop: 24, padding: 10, backgroundColor: "#f9fafb", borderRadius: 4 },
-  footer: { position: "absolute", bottom: 28, left: 40, right: 40, textAlign: "center", color: MUTED, fontSize: 8 },
+  grandLabel: { fontFamily: "Londrina", fontSize: 16, textTransform: "uppercase" },
+  grandValue: { fontFamily: "Londrina", fontSize: 18 },
+  validity: { marginTop: 8, textAlign: "right", fontSize: 9, color: BRAND.tintaSuave },
+  notes: { marginTop: 24, padding: 12, backgroundColor: BRAND.cielo, borderRadius: 6 },
+  // Pie verde oscuro con la frase en lima.
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: BRAND.tinta,
+    paddingVertical: 14,
+    paddingHorizontal: PAD,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  footerPhrase: { fontFamily: "Londrina", fontSize: 13, color: BRAND.halo },
+  footerMeta: { fontSize: 8, color: BRAND.nube },
 });
+
+const RIBBON = [BRAND.lavanda, BRAND.halo, BRAND.menta, BRAND.amanecerFuerte];
 
 const dateFmt = new Intl.DateTimeFormat("es-AR", { dateStyle: "long", timeZone: "UTC" });
 
@@ -85,65 +156,75 @@ export function QuotePdf({ q }: { q: QuotePdfData }) {
           </View>
           <View>
             <Text style={s.title}>Presupuesto</Text>
-            <Text style={s.meta}>{formatQuoteNumber(q.number)}</Text>
-            <Text style={s.meta}>Fecha: {dateFmt.format(q.createdAt)}</Text>
-            <Text style={s.meta}>Válido hasta: {dateFmt.format(q.validUntil)}</Text>
+            <Text style={s.number}>{formatQuoteNumber(q.number)}</Text>
+            <Text style={s.meta}>{dateFmt.format(q.createdAt)}</Text>
           </View>
         </View>
-
-        <View style={s.section}>
-          <Text style={s.label}>Cliente</Text>
-          <Text style={{ fontFamily: "Helvetica-Bold", fontSize: 12 }}>{q.clientName}</Text>
-          {q.clientPhone && <Text style={s.contact}>{q.clientPhone}</Text>}
-          {q.clientEmail && <Text style={s.contact}>{q.clientEmail}</Text>}
-        </View>
-
-        <View style={s.table}>
-          <View style={s.headRow}>
-            <Text style={[s.th, s.cDesc]}>Descripción</Text>
-            <Text style={[s.th, s.cQty]}>Cant.</Text>
-            <Text style={[s.th, s.cPrice]}>Precio unit.</Text>
-            <Text style={[s.th, s.cTotal]}>Subtotal</Text>
-          </View>
-          {q.items.map((item, i) => (
-            <View key={i} style={s.row} wrap={false}>
-              <Text style={s.cDesc}>{item.description}</Text>
-              <Text style={s.cQty}>{formatNumber(item.quantity)}</Text>
-              <Text style={s.cPrice}>{formatMoney(item.unitPrice)}</Text>
-              <Text style={s.cTotal}>{formatMoney(t.lines[i])}</Text>
-            </View>
+        <View style={s.ribbon}>
+          {RIBBON.map((c) => (
+            <View key={c} style={{ flex: 1, backgroundColor: c }} />
           ))}
         </View>
 
-        <View style={s.totals}>
-          {!D(q.discountPercent).isZero() && (
-            <>
-              <View style={s.totalRow}>
-                <Text>Subtotal</Text>
-                <Text>{formatMoney(t.subtotal)}</Text>
-              </View>
-              <View style={s.totalRow}>
-                <Text>Descuento {formatPercent(q.discountPercent, 0)}</Text>
-                <Text>-{formatMoney(t.discount)}</Text>
-              </View>
-            </>
-          )}
-          <View style={s.grandTotal}>
-            <Text>Total</Text>
-            <Text>{formatMoney(t.total)}</Text>
+        <View style={s.body}>
+          <View style={s.section}>
+            <Text style={s.label}>Para</Text>
+            <Text style={s.clientName}>{q.clientName}</Text>
+            {q.clientPhone && <Text style={s.muted}>{q.clientPhone}</Text>}
+            {q.clientEmail && <Text style={s.muted}>{q.clientEmail}</Text>}
           </View>
+
+          <View style={s.table}>
+            <View style={s.headRow}>
+              <Text style={[s.th, s.cDesc]}>Descripción</Text>
+              <Text style={[s.th, s.cQty]}>Cant.</Text>
+              <Text style={[s.th, s.cPrice]}>Precio unit.</Text>
+              <Text style={[s.th, s.cTotal]}>Subtotal</Text>
+            </View>
+            {q.items.map((item, i) => (
+              <View key={i} style={i % 2 === 1 ? [s.row, s.rowAlt] : s.row} wrap={false}>
+                <Text style={s.cDesc}>{item.description}</Text>
+                <Text style={s.cQty}>{formatNumber(item.quantity)}</Text>
+                <Text style={s.cPrice}>{formatMoney(item.unitPrice)}</Text>
+                <Text style={s.cTotal}>{formatMoney(t.lines[i])}</Text>
+              </View>
+            ))}
+          </View>
+
+          <View style={s.totals} wrap={false}>
+            {!D(q.discountPercent).isZero() && (
+              <>
+                <View style={s.totalRow}>
+                  <Text>Subtotal</Text>
+                  <Text>{formatMoney(t.subtotal)}</Text>
+                </View>
+                <View style={s.totalRow}>
+                  <Text>Descuento {formatPercent(q.discountPercent, 0)}</Text>
+                  <Text>-{formatMoney(t.discount)}</Text>
+                </View>
+              </>
+            )}
+            <View style={s.grandTotal}>
+              <Text style={s.grandLabel}>Total</Text>
+              <Text style={s.grandValue}>{formatMoney(t.total)}</Text>
+            </View>
+            <Text style={s.validity}>Válido hasta el {dateFmt.format(q.validUntil)}</Text>
+          </View>
+
+          {q.notes && (
+            <View style={s.notes} wrap={false}>
+              <Text style={s.label}>Notas</Text>
+              <Text>{q.notes}</Text>
+            </View>
+          )}
         </View>
 
-        {q.notes && (
-          <View style={s.notes}>
-            <Text style={s.label}>Notas</Text>
-            <Text>{q.notes}</Text>
-          </View>
-        )}
-
-        <Text style={s.footer} fixed>
-          {q.business.name} · Presupuesto {formatQuoteNumber(q.number)} · Precios en pesos argentinos
-        </Text>
+        <View style={s.footer} fixed>
+          <Text style={s.footerPhrase}>{BRAND.frase}</Text>
+          <Text style={s.footerMeta}>
+            {q.business.name} · {formatQuoteNumber(q.number)} · Precios en pesos argentinos
+          </Text>
+        </View>
       </Page>
     </Document>
   );

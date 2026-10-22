@@ -27,11 +27,12 @@ describe("presupuestos", () => {
       },
       "Mi Emprendimiento",
     );
-    expect(msg).toContain("Hola Lucía!");
-    expect(msg).toContain("#0007");
-    expect(msg).toMatch(/10 × Foto plastificada A4 — \$\s?18\.900,00/);
+    expect(msg).toContain("¡Hola, Lucía!");
+    expect(msg).toContain("*Presupuesto #0007*");
+    expect(msg).toContain("• 10 × Foto plastificada A4");
+    expect(msg).toMatch(/\$\s?1\.890,00 c\/u → \$\s?18\.900,00/);
     expect(msg).toMatch(/\*Total: \$\s?39\.510,90\*/);
-    expect(msg).toContain("27 de octubre de 2026");
+    expect(msg).toContain("martes, 27 de octubre");
     expect(msg).toContain("Seña del 50%.");
   });
 });
