@@ -13,6 +13,7 @@ import {
   type RawSearchResult,
 } from "./normalize";
 import { parseMeliRef } from "./parse-url";
+import { prepareQuery, rankByRelevance } from "./relevance";
 import type { MeliItemResponse, MeliListing, MeliSearchResponse } from "./types";
 
 const API = "https://api.mercadolibre.com";
@@ -57,14 +58,14 @@ export async function searchListings(rawQuery: string): Promise<MeliSearchRespon
   const query = normalizeQuery(rawQuery);
   if (query.length < 2) throw new MeliError("INVALID_INPUT", "Escribí al menos 2 letras para buscar.");
 
-  const key = `search:${query}`;
+  const key = `search:v2:${query}`;
   const cached = await cacheGet<MeliSearchResponse>(key);
   if (cached) return { ...cached, cached: true };
 
   let response: MeliSearchResponse;
   try {
     const data = await meliGet<{ results: RawSearchResult[] }>(
-      `/sites/MLA/search?q=${encodeURIComponent(query)}&limit=50`,
+      `/sites/MLA/search?q=${encodeURIComponent(prepareQuery(query))}&limit=50`,
     );
     const results = data.results.map(normalizeSearchResult).filter((r): r is MeliListing => r !== null);
     response = { query, source: "search", results, stats: listingStats(results), cached: false };
@@ -79,12 +80,17 @@ export async function searchListings(rawQuery: string): Promise<MeliSearchRespon
   return response;
 }
 
+/** Cuántos productos del catálogo mostramos (a cada uno hay que pedirle el precio aparte). */
+const CATALOG_SHOWN = 12;
+
 async function searchCatalog(query: string): Promise<MeliListing[]> {
+  // Pedimos 50 y nos quedamos con los más parecidos: el orden del catálogo de ML no es bueno.
   const data = await meliGet<{ results: RawProduct[] }>(
-    `/products/search?status=active&site_id=MLA&q=${encodeURIComponent(query)}&limit=12`,
+    `/products/search?status=active&site_id=MLA&q=${encodeURIComponent(prepareQuery(query))}&limit=50`,
   );
+  const best = rankByRelevance(data.results, query, (p) => p.name).slice(0, CATALOG_SHOWN);
   const listings = await Promise.all(
-    data.results.map(async (p) => {
+    best.map(async (p) => {
       if (p.buy_box_winner) return normalizeProduct(p);
       try {
         const items = await meliGet<{ results: RawProductItem[] }>(`/products/${p.id}/items?limit=5`);
