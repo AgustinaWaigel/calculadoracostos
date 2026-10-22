@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { areaFactor, evenCoverage, inkCostPerReferencePage, printCost } from "@/lib/calc/print";
+import { areaFactor, evenCoverage, inkCostPerReferencePage, jobInks, printCost } from "@/lib/calc/print";
 
 // Botes tipo sistema continuo: negro $12.000 rinde 7.500 pág., colores $12.000 rinden 6.000 pág. (al 5%)
 const K = { name: "Negro", bottlePrice: "12000", yieldPages: "7500" };
@@ -70,5 +70,21 @@ describe("calculadora de impresión", () => {
     // promedio por página de referencia = (1,6 + 2 + 2 + 2) / 4 = 1,9 → × 50/5 = 19
     expect(r.ink.toString()).toBe("19");
     expect(() => evenCoverage(50, 0)).toThrow();
+  });
+
+  it("tintas del trabajo: B/N usa solo las negras, color todas", () => {
+    const saved = [
+      { ...K, channel: "K" as const },
+      { ...C, channel: "C" as const },
+      { ...M, channel: "M" as const },
+      { ...Y, channel: "Y" as const },
+    ];
+    const bn = jobInks(saved, false, 10);
+    expect(bn.map((i) => i.name)).toEqual(["Negro"]);
+    expect(bn[0].coverage.toString()).toBe("10");
+    const color = jobInks(saved, true, 50);
+    expect(color).toHaveLength(4);
+    expect(printCost({ inks: color }).ink.toString()).toBe("19"); // igual que el promedio de las tintas
+    expect(() => jobInks(saved.slice(1), false, 10)).toThrow(/Negro/);
   });
 });

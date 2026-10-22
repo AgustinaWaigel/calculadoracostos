@@ -3,8 +3,9 @@ import { db } from "@/lib/db";
 import { supplyUnitCost } from "@/lib/calc/supply";
 import { getCostingContext, type CostingContext } from "./costing";
 import type { EditorOptions } from "@/components/products/types";
+import type { InkChannel } from "@/lib/calc/print";
 
-export function contextToPlain(ctx: CostingContext): Omit<EditorOptions, "supplies" | "profiles" | "machines" | "categories"> {
+export function contextToPlain(ctx: CostingContext): Omit<EditorOptions, "supplies" | "profiles" | "machines" | "categories" | "inks"> {
   const b = ctx.business;
   return {
     fixedPerUnit: ctx.fixedPerUnit.toString(),
@@ -34,12 +35,13 @@ export function contextToPlain(ctx: CostingContext): Omit<EditorOptions, "suppli
 }
 
 export async function getEditorOptions(): Promise<EditorOptions> {
-  const [ctx, supplies, profiles, machines, categories] = await Promise.all([
+  const [ctx, supplies, profiles, machines, categories, inks] = await Promise.all([
     getCostingContext(),
     db.supply.findMany({ orderBy: { name: "asc" } }),
     db.laborProfile.findMany({ orderBy: { createdAt: "asc" } }),
     db.machine.findMany({ orderBy: { name: "asc" } }),
     db.product.findMany({ where: { category: { not: null } }, distinct: ["category"], select: { category: true } }),
+    db.printInk.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
   return {
     ...contextToPlain(ctx),
@@ -61,5 +63,11 @@ export async function getEditorOptions(): Promise<EditorOptions> {
       lifeUnit: m.lifeUnit,
     })),
     categories: categories.map((c) => c.category!),
+    inks: inks.map((i) => ({
+      name: i.name,
+      channel: i.channel as InkChannel,
+      bottlePrice: i.bottlePrice.toString(),
+      yieldPages: i.yieldPages,
+    })),
   };
 }

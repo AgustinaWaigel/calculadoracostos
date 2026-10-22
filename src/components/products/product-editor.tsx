@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { Loader2Icon, PlusIcon, PrinterIcon, SaveIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,16 +20,21 @@ import { useAction } from "@/components/shared/use-action";
 import { CostBreakdownPie } from "./cost-breakdown-pie";
 import { MarginTooltip } from "./margin-tooltip";
 import { computeLive } from "./live-costing";
+import { QuickSupplyDialog, type CreatedSupply } from "@/components/supplies/quick-supply-dialog";
+import { QuickPrintDialog } from "@/components/print/quick-print-dialog";
 import { saveProduct } from "@/actions/products";
 import { productSchema, type ProductData, type ProductInput } from "@/lib/schemas";
 import { formatMoney, formatPercent, toInputString } from "@/lib/money";
 import type { EditorOptions, ProductFormValues } from "./types";
 
+const KIND_FILTERS = [
+  { value: "MATERIAL", label: "Materiales" },
+  { value: "SERVICE", label: "Servicios" },
+];
+
 export function ProductEditor({ options, defaults }: { options: EditorOptions; defaults?: ProductFormValues }) {
   const router = useRouter();
-  const form = useForm<ProductInput, unknown, ProductData>({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
+  const [initialValues] = useState<ProductInput>(() => ({
       id: defaults?.id,
       name: defaults?.name ?? "",
       description: defaults?.description ?? "",
@@ -42,7 +49,10 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
       ],
       labor: defaults?.labor.map((l) => ({ ...l, minutes: toInputString(l.minutes) })) ?? [],
       machines: defaults?.machines.map((m) => ({ ...m, usage: toInputString(m.usage) })) ?? [],
-    },
+  }));
+  const form = useForm<ProductInput, unknown, ProductData>({
+    resolver: zodResolver(productSchema),
+    defaultValues: initialValues,
   });
   const { control, register, formState, getValues, setError } = form;
   const errors = formState.errors;
@@ -52,8 +62,80 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
   const { pending, run } = useAction<ProductInput>(setError);
 
   const values = useWatch({ control });
-  const live = computeLive(values, options);
-  const supplyById = new Map(options.supplies.map((s) => [s.id, s]));
+
+  // Insumos creados desde acá: se usan al toque, hasta que el servidor los mande en `options`.
+  const [created, setCreated] = useState<CreatedSupply[]>([]);
+  const allSupplies = [
+    ...options.supplies.filter((s) => !created.some((c) => c.id === s.id)),
+    ...created,
+  ].sort((a, b) => a.name.localeCompare(b.name, "es"));
+  const live = computeLive(values, { ...options, supplies: allSupplies });
+  const supplyById = new Map(allSupplies.map((s) => [s.id, s]));
+
+  // Alta rápida: para qué fila se crea (null = cerrado).
+  const [newSupply, setNewSupply] = useState<{ row: number; name: string } | null>(null);
+  const [newPrint, setNewPrint] = useState<{ row: number } | null>(null);
+  function pickCreated(row: number, supply: CreatedSupply) {
+    setCreated((list) => [...list.filter((s) => s.id !== supply.id), supply]);
+    if (row >= supplies.fields.length) supplies.append({ supplyId: supply.id, quantity: "1" });
+    else form.setValue(`supplies.${row}.supplyId`, supply.id, { shouldDirty: true });
+  }
+  // Fila vacía para usar, o una nueva al final.
+  const freeRow = () => {
+    const i = (getValues("supplies") ?? []).findIndex((s) => !s.supplyId);
+    return i === -1 ? supplies.fields.length : i;
+  };
+
+  // Borrador en este navegador: si salís de la página sin guardar, lo recuperás al volver.
+  const draftKey = `borrador-producto:${defaults?.id ?? "nuevo"}`;
+  const [draftReady, setDraftReady] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(draftKey) ?? "null") as { values?: ProductInput } | null;
+      if (saved?.values) {
+        form.reset(saved.values, { keepDefaultValues: true });
+        toast.info("Recuperamos lo que estabas cargando.", {
+          duration: 8000,
+          action: {
+            label: "Descartar",
+            onClick: () => {
+              try {
+                localStorage.removeItem(draftKey);
+              } catch {
+                // sin storage: no hay nada que borrar
+              }
+              form.reset(initialValues);
+            },
+          },
+        });
+      }
+    } catch {
+      // borrador roto o sin storage: arrancamos de cero
+    }
+    setDraftReady(true);
+    // Solo al abrir el editor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const valuesJson = JSON.stringify(values);
+  const isDirty = form.formState.isDirty;
+  useEffect(() => {
+    if (!draftReady || !isDirty) return;
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ savedAt: Date.now(), values: getValues() }));
+      } catch {
+        // sin storage: no guardamos borrador
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [valuesJson, draftReady, draftKey, isDirty, getValues]);
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      // sin storage
+    }
+  };
   const machineById = new Map(options.machines.map((m) => [m.id, m]));
   const lineCost = (list: { id?: string; batchCost: { toString(): string } }[] | undefined, id?: string) =>
     list?.find((l) => l.id === id)?.batchCost.toString();
@@ -73,6 +155,8 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
           machines: (raw.machines ?? []).filter((m) => m.machineId),
         }),
       (data) => {
+        clearDraft();
+        form.reset(getValues());
         if (!defaults?.id) router.push(`/productos/${data.id}`);
         else router.refresh();
       },
@@ -166,12 +250,9 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
             <CardDescription>Se aceptan fracciones: 0,25 hoja, 1,5 m…</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
-            {options.supplies.length === 0 && (
+            {allSupplies.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                No tenés insumos cargados.{" "}
-                <Link href="/insumos/nuevo" className="font-medium text-primary underline">
-                  Cargar uno
-                </Link>
+                Todavía no tenés insumos: creá el primero con el botón de abajo, sin salir de acá.
               </p>
             )}
             {supplies.fields.map((f, i) => {
@@ -188,11 +269,42 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
                         onChange={field.onChange}
                         placeholder="Elegí un insumo"
                         searchPlaceholder="Buscar insumo…"
-                        options={options.supplies.map((s) => ({
+                        options={allSupplies.map((s) => ({
                           value: s.id,
                           label: s.name,
                           hint: `${formatMoney(s.unitCost)}/${s.usageUnit}`,
+                          group: s.kind,
                         }))}
+                        filters={KIND_FILTERS}
+                        emptyText="No está cargado."
+                        footer={(search, close) => (
+                          <>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start"
+                              onClick={() => {
+                                close();
+                                setNewSupply({ row: i, name: search });
+                              }}
+                            >
+                              <PlusIcon /> {search ? `Crear “${search}”` : "Crear insumo nuevo"}
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="justify-start"
+                              onClick={() => {
+                                close();
+                                setNewPrint({ row: i });
+                              }}
+                            >
+                              <PrinterIcon /> Calcular una impresión
+                            </Button>
+                          </>
+                        )}
                         className="col-span-3 sm:col-span-1"
                       />
                     )}
@@ -221,7 +333,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
               );
             })}
             <FieldError message={errors.supplies?.message ?? errors.supplies?.root?.message} />
-            <div>
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 variant="secondary"
@@ -230,7 +342,25 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
               >
                 <PlusIcon /> Agregar insumo
               </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setNewSupply({ row: freeRow(), name: "" })}>
+                <PlusIcon /> Crear insumo nuevo
+              </Button>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setNewPrint({ row: freeRow() })}>
+                <PrinterIcon /> Agregar impresión
+              </Button>
             </div>
+            <QuickSupplyDialog
+              open={newSupply !== null}
+              onOpenChange={(o) => !o && setNewSupply(null)}
+              defaultName={newSupply?.name}
+              onCreated={(s) => newSupply && pickCreated(newSupply.row, s)}
+            />
+            <QuickPrintDialog
+              open={newPrint !== null}
+              onOpenChange={(o) => !o && setNewPrint(null)}
+              inks={options.inks}
+              onCreated={(s) => newPrint && pickCreated(newPrint.row, s)}
+            />
           </CardContent>
         </Card>
 

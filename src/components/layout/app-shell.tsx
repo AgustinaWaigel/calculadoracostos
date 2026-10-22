@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalculatorIcon, MenuIcon } from "lucide-react";
+import { CalculatorIcon, LogOutIcon, MenuIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { logout } from "@/actions/auth";
 import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
@@ -62,17 +63,40 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+/** Quién está adentro y cómo salir (al pie del menú). */
+function Account({ email }: { email: string | null }) {
+  if (!email) return null;
+  return (
+    <form action={logout} className="flex items-center gap-2 border-t border-sidebar-border px-3 pt-3">
+      <span className="min-w-0 flex-1 truncate text-xs text-sidebar-foreground/70" title={email}>
+        {email}
+      </span>
+      <button
+        type="submit"
+        className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-xs font-semibold text-sidebar-foreground/90 outline-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent"
+      >
+        <LogOutIcon className="size-3.5" /> Salir
+      </button>
+    </form>
+  );
+}
+
 export function AppShell({
   children,
   businessName,
   logoUrl,
+  userEmail,
 }: {
   children: React.ReactNode;
   businessName: string;
   logoUrl: string | null;
+  userEmail: string | null;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  // La pantalla de ingreso va sola, sin menú.
+  if (pathname === "/ingresar") return <>{children}</>;
 
   return (
     <div className="min-h-dvh bg-background">
@@ -80,9 +104,10 @@ export function AppShell({
       <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-7 bg-sidebar px-4 py-5 text-sidebar-foreground lg:flex">
         <Brand name={businessName} logoUrl={logoUrl} />
         <NavLinks />
-        <p className="mt-auto px-3 font-display text-base leading-tight text-sidebar-primary">
-          Para escribir, soñar y volar.
-        </p>
+        <div className="mt-auto grid gap-4">
+          <p className="px-3 font-display text-base leading-tight text-sidebar-primary">Para escribir, soñar y volar.</p>
+          <Account email={userEmail} />
+        </div>
       </aside>
 
       <div className="lg:pl-64">
@@ -99,6 +124,9 @@ export function AppShell({
                 <Brand name={businessName} logoUrl={logoUrl} />
               </SheetHeader>
               <NavLinks onNavigate={() => setOpen(false)} />
+              <div className="mt-auto">
+                <Account email={userEmail} />
+              </div>
             </SheetContent>
           </Sheet>
           <Link href="/" className="flex min-w-0 items-center gap-2 lg:hidden">

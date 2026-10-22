@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -19,6 +19,8 @@ export interface ComboboxOption {
   label: string;
   hint?: string;
   disabled?: boolean;
+  /** Para los filtros de arriba (por ejemplo, material o servicio). */
+  group?: string;
 }
 
 /** Selector con búsqueda (para listas largas de insumos). */
@@ -31,6 +33,8 @@ export function Combobox({
   emptyText = "Sin resultados",
   className,
   ariaLabel,
+  filters,
+  footer,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -40,12 +44,27 @@ export function Combobox({
   emptyText?: string;
   className?: string;
   ariaLabel?: string;
+  /** Filtros rápidos por `group`; "Todos" se agrega solo. */
+  filters?: { value: string; label: string }[];
+  /** Acciones al pie (por ejemplo, crear lo que no se encontró). Recibe lo buscado y cómo cerrar. */
+  footer?: (search: string, close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [group, setGroup] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const selected = options.find((o) => o.value === value);
+  const visible = group ? options.filter((o) => o.group === group) : options;
+  const close = () => setOpen(false);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSearch("");
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           type="button"
@@ -59,20 +78,42 @@ export function Combobox({
           <ChevronsUpDownIcon className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) min-w-64 p-0" align="start">
+      <PopoverContent className="w-(--radix-popover-trigger-width) min-w-72 p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput ref={searchRef} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
+          {filters && (
+            <div className="flex gap-1 border-b p-1.5" role="radiogroup" aria-label="Filtrar">
+              {[{ value: null, label: "Todos" }, ...filters].map((f) => (
+                <button
+                  key={f.label}
+                  type="button"
+                  role="radio"
+                  aria-checked={group === f.value}
+                  onClick={() => {
+                    setGroup(f.value);
+                    searchRef.current?.focus(); // que se pueda seguir escribiendo
+                  }}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors duration-150",
+                    group === f.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
-              {options.map((o) => (
+              {visible.map((o) => (
                 <CommandItem
                   key={o.value}
                   value={`${o.label} ${o.value}`}
                   disabled={o.disabled}
                   onSelect={() => {
                     onChange(o.value);
-                    setOpen(false);
+                    close();
                   }}
                 >
                   <CheckIcon className={cn(o.value === value ? "opacity-100" : "opacity-0")} />
@@ -82,6 +123,7 @@ export function Combobox({
               ))}
             </CommandGroup>
           </CommandList>
+          {footer && <div className="grid gap-0.5 border-t p-1">{footer(search.trim(), close)}</div>}
         </Command>
       </PopoverContent>
     </Popover>

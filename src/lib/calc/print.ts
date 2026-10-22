@@ -124,3 +124,25 @@ export function evenCoverage(total: DecimalInput, inkCount: number): Decimal {
   if (inkCount < 1) throw new RangeError("No hay tintas para repartir la cobertura");
   return D(total).div(inkCount);
 }
+
+export interface JobInk {
+  name: string;
+  channel: InkChannel;
+  bottlePrice: DecimalInput;
+  yieldPages: DecimalInput;
+}
+
+/**
+ * Tintas que usa un trabajo, con la ocupación repartida en partes iguales.
+ * En blanco y negro solo las negras (K); a color, todas.
+ */
+export function jobInks(inks: JobInk[], color: boolean, level: DecimalInput): InkInput[] {
+  const used = inks.filter((i) => (color || i.channel === "K") && D(i.yieldPages).gt(0));
+  if (used.length === 0) {
+    throw new RangeError(
+      color ? "Cargá tus tintas en Impresión." : "Para blanco y negro, marcá una de tus tintas como Negro (K).",
+    );
+  }
+  const coverage = evenCoverage(level, used.length);
+  return used.map((i) => ({ name: i.name, bottlePrice: i.bottlePrice, yieldPages: i.yieldPages, coverage }));
+}

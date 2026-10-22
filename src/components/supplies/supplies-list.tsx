@@ -29,6 +29,8 @@ export interface SupplyRow {
 export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string | null>(null);
+  const [kind, setKind] = useState<SupplyRow["kind"] | null>(null);
+  const hasBothKinds = rows.some((r) => r.kind === "SERVICE") && rows.some((r) => r.kind === "MATERIAL");
   const categories = useMemo(
     () => [...new Set(rows.map((r) => r.category).filter((c): c is string => !!c))].sort(),
     [rows],
@@ -36,6 +38,7 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
   const filtered = rows.filter(
     (r) =>
       (!category || r.category === category) &&
+      (!kind || r.kind === kind) &&
       (!q || `${r.name} ${r.supplier ?? ""} ${r.category ?? ""}`.toLowerCase().includes(q.toLowerCase())),
   );
 
@@ -46,6 +49,32 @@ export function SuppliesList({ rows }: { rows: SupplyRow[] }) {
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar insumo…" className="pl-8" />
         </div>
+        {hasBothKinds && (
+          <div className="flex gap-1 rounded-lg border bg-card p-0.5" role="radiogroup" aria-label="Tipo de insumo">
+            {(
+              [
+                { value: null, label: "Todos" },
+                { value: "MATERIAL", label: "Materiales" },
+                { value: "SERVICE", label: "Servicios" },
+              ] as const
+            ).map((k) => (
+              <button
+                key={k.label}
+                type="button"
+                role="radio"
+                aria-checked={kind === k.value}
+                onClick={() => setKind(k.value)}
+                className={
+                  kind === k.value
+                    ? "rounded-md bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground"
+                    : "rounded-md px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors duration-150 hover:bg-muted"
+                }
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
+        )}
         {categories.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             <Badge

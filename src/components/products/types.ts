@@ -1,4 +1,5 @@
 import type { PricingMode, TaxCondition } from "@/lib/calc/pricing";
+import type { InkChannel } from "@/lib/calc/print";
 
 /** Datos planos (strings) que el editor de productos necesita para calcular en vivo. */
 export interface EditorOptions {
@@ -37,6 +38,8 @@ export interface EditorOptions {
   }[];
   tiers: { minQuantity: number; discountPercent: string }[];
   categories: string[];
+  /** Tintas guardadas en Impresión, para calcular una impresión sin salir del producto. */
+  inks: { name: string; channel: InkChannel; bottlePrice: string; yieldPages: number }[];
 }
 
 export interface ProductFormValues {
