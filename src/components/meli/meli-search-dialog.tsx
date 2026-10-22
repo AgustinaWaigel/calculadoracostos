@@ -149,7 +149,7 @@ export function MeliSearchDialog({
                           {r.currency === "ARS" ? fmt(r.price) : `${r.currency} ${formatNumber(r.price)}`}
                         </span>
                         {r.freeShipping && (
-                          <Badge variant="secondary" className="text-emerald-700 dark:text-emerald-400">
+                          <Badge variant="secondary" className="text-tinta dark:text-menta">
                             <TruckIcon /> Envío gratis
                           </Badge>
                         )}

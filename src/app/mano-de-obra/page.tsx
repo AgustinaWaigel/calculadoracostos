@@ -41,7 +41,7 @@ export default async function ManoDeObraPage() {
       />
 
       {below.length > 0 && (
-        <Alert className="mb-4 border-amber-500/50 text-amber-800 dark:text-amber-300">
+        <Alert className="mb-4 border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]">
           <TrendingDownIcon />
           <AlertTitle>Estás cobrando por debajo del mercado</AlertTitle>
           <AlertDescription>
@@ -84,8 +84,8 @@ export default async function ManoDeObraPage() {
                           variant="outline"
                           className={
                             cmp.isBelowMarket
-                              ? "border-amber-500/50 text-amber-700 dark:text-amber-400"
-                              : "border-emerald-500/50 text-emerald-700 dark:text-emerald-400"
+                              ? "border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]"
+                              : "border-menta text-tinta dark:text-menta"
                           }
                         >
                           {cmp.diffPercent.gte(0) ? "+" : ""}

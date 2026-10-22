@@ -45,7 +45,7 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
   return (
     <div className="grid gap-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Costo por unidad" icon={ShapesIcon} accent="violet" value={<Money value={cost.total.toString()} />} />
+        <StatCard label="Costo por unidad" icon={ShapesIcon} accent="lavanda" value={<Money value={cost.total.toString()} />} />
         <StatCard
           label={
             <span className="flex items-center gap-1">
@@ -53,19 +53,19 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
             </span>
           }
           icon={PercentIcon}
-          accent="green"
+          accent="tinta"
           value={formatPercent(pricing.percent, 0)}
         />
         <StatCard
           label="Ganancia por unidad"
           icon={CoinsIcon}
-          accent="emerald"
+          accent="amanecer"
           value={<Money value={pricing.targetProfit.toString()} />}
         />
         <StatCard
           label="Punto de equilibrio"
           icon={ScaleIcon}
-          accent="amber"
+          accent="kraft"
           value={pricing.breakEven ? `${formatNumber(pricing.breakEven.units, 0)} u/mes` : "—"}
           hint={pricing.breakEven ? "para cubrir los fijos" : "No cubre el costo variable"}
           tone={pricing.breakEven ? "default" : "bad"}
@@ -102,7 +102,7 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
             <TableBody>
               {pricing.channels.map((c) =>
                 c.ok ? (
-                  <TableRow key={c.channelName} className={c.type === "DIRECT" ? "bg-green-500/8" : undefined}>
+                  <TableRow key={c.channelName} className={c.type === "DIRECT" ? "bg-halo/15 dark:bg-halo/8" : undefined}>
                     <TableCell className="font-medium">
                       {c.channelName}
                       {c.isLoss && (
@@ -111,7 +111,7 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right text-lg font-bold text-green-700 dark:text-green-400">
+                    <TableCell className="text-right text-lg font-bold text-tinta dark:text-menta">
                       <Money value={c.price.toString()} />
                     </TableCell>
                     {isRI && (
@@ -126,7 +126,7 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
                       <Money value={c.shipping.plus(c.fixedFee).toString()} />
                     </TableCell>
                     <TableCell className="text-right">
-                      <span className={c.isLoss ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}>
+                      <span className={c.isLoss ? "text-destructive" : "text-tinta dark:text-menta"}>
                         <Money value={c.netProfit.toString()} />
                       </span>
                       <span className="block text-xs text-muted-foreground">

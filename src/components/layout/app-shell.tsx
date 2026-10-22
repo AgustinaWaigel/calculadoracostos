@@ -7,17 +7,29 @@ import { CalculatorIcon, MenuIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ACCENTS, NAV_ITEMS, isActive } from "./nav-items";
+import { NAV_ITEMS, isActive } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { CurrencySwitcher } from "./currency-switcher";
 
-function Brand({ name }: { name: string }) {
+function BrandMark({ logoUrl, className }: { logoUrl: string | null; className?: string }) {
+  return logoUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element -- el logo es un data URL guardado en la base
+    <img src={logoUrl} alt="" className={cn("rounded-lg object-cover", className)} />
+  ) : (
+    <span className={cn("grid place-items-center rounded-lg bg-amanecer text-nube", className)}>
+      <CalculatorIcon className="size-1/2" />
+    </span>
+  );
+}
+
+function Brand({ name, logoUrl }: { name: string; logoUrl: string | null }) {
   return (
-    <Link href="/" className="flex items-center gap-2 font-semibold">
-      <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">
-        <CalculatorIcon className="size-4" />
+    <Link href="/" className="flex items-center gap-3 rounded-lg outline-sidebar-ring">
+      <BrandMark logoUrl={logoUrl} className="size-11 shrink-0" />
+      <span className="min-w-0">
+        <span className="block truncate font-display text-xl leading-none tracking-wide uppercase">{name}</span>
+        <span className="mt-1 block text-xs text-sidebar-foreground/70">Costos y precios</span>
       </span>
-      <span className="truncate">{name}</span>
     </Link>
   );
 }
@@ -25,7 +37,7 @@ function Brand({ name }: { name: string }) {
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
-    <nav className="grid gap-1">
+    <nav className="grid gap-0.5" aria-label="Secciones">
       {NAV_ITEMS.map((item) => {
         const active = isActive(pathname, item.href);
         return (
@@ -35,18 +47,13 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors",
-              active ? cn(ACCENTS[item.accent].bg, "font-semibold text-foreground") : "text-foreground/80 hover:bg-muted",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm outline-sidebar-ring transition-colors duration-150",
+              active
+                ? "bg-sidebar-primary font-semibold text-sidebar-primary-foreground"
+                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
             )}
           >
-            <span
-              className={cn(
-                "grid size-7 place-items-center rounded-md",
-                active ? ACCENTS[item.accent].solid : cn(ACCENTS[item.accent].bg, ACCENTS[item.accent].text),
-              )}
-            >
-              <item.icon className="size-4" />
-            </span>
+            <item.icon className="size-4 shrink-0" />
             {item.label}
           </Link>
         );
@@ -55,49 +62,61 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-export function AppShell({ children, businessName }: { children: React.ReactNode; businessName: string }) {
+export function AppShell({
+  children,
+  businessName,
+  logoUrl,
+}: {
+  children: React.ReactNode;
+  businessName: string;
+  logoUrl: string | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   return (
     <div className="min-h-dvh bg-background">
-      {/* Sidebar desktop */}
-      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col gap-6 border-r bg-sidebar p-4 lg:flex">
-        <Brand name={businessName} />
+      {/* Riel verde en escritorio */}
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col gap-7 bg-sidebar px-4 py-5 text-sidebar-foreground lg:flex">
+        <Brand name={businessName} logoUrl={logoUrl} />
         <NavLinks />
+        <p className="mt-auto px-3 font-display text-base leading-tight text-sidebar-primary">
+          Para escribir, soñar y volar.
+        </p>
       </aside>
 
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/85 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+      <div className="lg:pl-64">
+        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b bg-background/90 px-4 backdrop-blur supports-backdrop-filter:bg-background/75">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Abrir menú">
+              <Button variant="ghost" size="icon" className="-ml-2 lg:hidden" aria-label="Abrir menú">
                 <MenuIcon />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 p-4">
-              <SheetHeader className="p-0">
+            <SheetContent side="left" className="w-72 border-none bg-sidebar p-4 text-sidebar-foreground">
+              <SheetHeader className="mb-4 p-0">
                 <SheetTitle className="sr-only">Menú</SheetTitle>
-                <Brand name={businessName} />
+                <Brand name={businessName} logoUrl={logoUrl} />
               </SheetHeader>
               <NavLinks onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>
-          <div className="lg:hidden">
-            <span className="text-sm font-semibold">{businessName}</span>
-          </div>
-          <div className="ml-auto flex items-center gap-1">
+          <Link href="/" className="flex min-w-0 items-center gap-2 lg:hidden">
+            <BrandMark logoUrl={logoUrl} className="size-7 shrink-0" />
+            <span className="truncate font-display text-lg leading-none tracking-wide uppercase">{businessName}</span>
+          </Link>
+          <div className="ml-auto flex shrink-0 items-center gap-1">
             <CurrencySwitcher />
             <ThemeToggle />
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 lg:pb-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl px-4 pt-6 pb-28 sm:px-6 lg:px-8 lg:pt-8 lg:pb-12">{children}</main>
       </div>
 
-      {/* Barra inferior mobile */}
+      {/* Barra inferior en el celular */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
         aria-label="Navegación principal"
       >
         {NAV_ITEMS.filter((i) => i.mobile).map((item) => {
@@ -114,8 +133,8 @@ export function AppShell({ children, businessName }: { children: React.ReactNode
             >
               <span
                 className={cn(
-                  "grid h-7 w-12 place-items-center rounded-full transition-colors",
-                  active && ACCENTS[item.accent].solid,
+                  "grid h-7 w-12 place-items-center rounded-full transition-colors duration-150",
+                  active && "bg-halo text-[#0b3b29]",
                 )}
               >
                 <item.icon className="size-5" />

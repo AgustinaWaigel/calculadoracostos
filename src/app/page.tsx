@@ -27,11 +27,11 @@ import { cn } from "@/lib/utils";
 const WINDOW_DAYS = 90;
 
 const QUICK_ACTIONS: { href: string; label: string; icon: LucideIcon; accent: Accent }[] = [
-  { href: "/insumos/nuevo", label: "Cargar insumo", icon: PackageIcon, accent: "sky" },
-  { href: "/productos/nuevo", label: "Nuevo producto", icon: ShapesIcon, accent: "violet" },
-  { href: "/presupuestos/nuevo", label: "Presupuesto", icon: FileTextIcon, accent: "emerald" },
-  { href: "/impresion", label: "Tinta por hoja", icon: PrinterIcon, accent: "cyan" },
-  { href: "/calculadora", label: "Cuenta rápida", icon: CalculatorIcon, accent: "orange" },
+  { href: "/insumos/nuevo", label: "Cargar insumo", icon: PackageIcon, accent: "menta" },
+  { href: "/productos/nuevo", label: "Nuevo producto", icon: ShapesIcon, accent: "lavanda" },
+  { href: "/presupuestos/nuevo", label: "Presupuesto", icon: FileTextIcon, accent: "amanecer" },
+  { href: "/impresion", label: "Tinta por hoja", icon: PrinterIcon, accent: "menta" },
+  { href: "/calculadora", label: "Cuenta rápida", icon: CalculatorIcon, accent: "halo" },
 ];
 
 export default async function DashboardPage() {
@@ -83,8 +83,7 @@ export default async function DashboardPage() {
               key={a.href}
               href={a.href}
               className={cn(
-                "flex items-center gap-3 rounded-xl border p-3 font-medium transition-transform hover:-translate-y-0.5",
-                ACCENTS[a.accent].bg,
+                "flex items-center gap-3 rounded-xl border bg-card p-3 font-semibold transition-[transform,background-color] duration-150 ease-out hover:-translate-y-0.5 hover:bg-muted/60",
                 ACCENTS[a.accent].border,
               )}
             >
@@ -97,29 +96,29 @@ export default async function DashboardPage() {
         </nav>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Productos" icon={ShapesIcon} accent="violet" value={items.length} />
+          <StatCard label="Productos" icon={ShapesIcon} accent="lavanda" value={items.length} />
           <StatCard
             label="Margen promedio"
             icon={PercentIcon}
-            accent="green"
+            accent="tinta"
             value={avgMargin ? formatPercent(avgMargin, 0) : "—"}
           />
           <StatCard
             label="Precios viejos"
             icon={AlertTriangleIcon}
-            accent="amber"
+            accent="kraft"
             value={stale.length}
             hint="+30 días sin actualizar"
           />
-          <StatCard label="Presupuestos del mes" icon={FileTextIcon} accent="emerald" value={quotesThisMonth} />
+          <StatCard label="Presupuestos del mes" icon={FileTextIcon} accent="amanecer" value={quotesThisMonth} />
         </div>
 
         {stale.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-            <AlertTriangleIcon className="size-4 text-amber-600 dark:text-amber-400" />
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-halo/70 bg-halo/20 p-3 text-sm dark:border-halo/30 dark:bg-halo/10">
+            <AlertTriangleIcon className="size-4 text-tinta dark:text-halo" />
             <span className="font-medium">Revisá estos precios:</span>
             {stale.slice(0, 8).map((s) => (
-              <Badge key={s.id} asChild variant="outline" className="h-7 bg-background px-2.5">
+              <Badge key={s.id} asChild variant="outline" className="h-7 bg-card px-2.5 hover:bg-muted">
                 <Link href={`/insumos/${s.id}`}>
                   {s.name} · {daysSince(s.priceUpdatedAt)} d
                 </Link>
@@ -132,7 +131,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <span className={cn("grid size-7 place-items-center rounded-lg", ACCENTS.violet.solid)}>
+                <span className={cn("grid size-7 place-items-center rounded-lg", ACCENTS.lavanda.solid)}>
                   <ShapesIcon className="size-4" />
                 </span>
                 Lo que más te deja
@@ -154,7 +153,7 @@ export default async function DashboardPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <span className={cn("grid size-7 place-items-center rounded-lg", ACCENTS.rose.solid)}>
+                <span className={cn("grid size-7 place-items-center rounded-lg", ACCENTS.amanecer.solid)}>
                   <TrendingUpIcon className="size-4" />
                 </span>
                 Lo que más subió
@@ -175,7 +174,7 @@ export default async function DashboardPage() {
                             USD +{formatPercent(s.usdPercent, 0)}
                           </Badge>
                         )}
-                        <Badge className="bg-rose-600 text-white">+{formatPercent(s.arsPercent, 0)}</Badge>
+                        <Badge className="bg-amanecer text-nube dark:bg-lavanda dark:text-amanecer-fuerte">+{formatPercent(s.arsPercent, 0)}</Badge>
                       </Link>
                     </li>
                   ))}

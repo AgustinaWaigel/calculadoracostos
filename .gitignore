@@ -47,3 +47,8 @@ next-env.d.ts
 
 # Certificados locales de https (mkcert)
 /certificates
+
+# Skills de Claude Code instaladas localmente (impeccable): no van al repo
+/.claude/skills/
+/skills-lock.json
+/.impeccable/

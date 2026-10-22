@@ -17,7 +17,7 @@ export function DolarCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <span className="grid size-7 place-items-center rounded-lg bg-green-600 text-white">
+          <span className="grid size-7 place-items-center rounded-lg bg-halo text-[#0b3b29]">
             <DollarSignIcon className="size-4" />
           </span>
           Dólar hoy
@@ -30,7 +30,7 @@ export function DolarCard() {
         ) : (
           <dl className="grid grid-cols-3 gap-2">
             {types.map((t) => (
-              <div key={t} className="rounded-lg bg-green-500/10 p-2 text-center">
+              <div key={t} className="rounded-lg bg-halo/20 p-2 text-center dark:bg-halo/10">
                 <dt className="text-xs text-muted-foreground">{DOLAR_LABELS[t]}</dt>
                 <dd className="font-semibold tabular-nums">{formatMoney(rates[t]!.sell, "ARS", 0)}</dd>
               </div>

@@ -81,7 +81,7 @@ export function PriceSimulator({
               ))}
             <div className="mt-1 flex justify-between border-t pt-2 font-semibold">
               <dt>Te queda</dt>
-              <dd className={result.isLoss ? "text-destructive" : "text-emerald-600 dark:text-emerald-400"}>
+              <dd className={result.isLoss ? "text-destructive" : "text-tinta dark:text-menta"}>
                 <Money value={result.netProfit.toString()} /> ({formatPercent(result.netMarginPercent, 0)})
               </dd>
             </div>

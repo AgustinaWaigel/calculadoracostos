@@ -30,7 +30,7 @@ function Step({ n, done, children }: { n: number; done?: boolean; children: Reac
       <span
         className={
           done
-            ? "grid size-7 shrink-0 place-items-center rounded-full bg-emerald-600 text-white"
+            ? "grid size-7 shrink-0 place-items-center rounded-full bg-tinta text-nube"
             : "grid size-7 shrink-0 place-items-center rounded-full bg-yellow-400 text-sm font-bold text-yellow-950"
         }
       >
@@ -103,7 +103,7 @@ export function MeliConnection({ status }: { status: MeliStatus }) {
           </span>
           Mercado Libre
           {status.connected && (
-            <Badge className="ml-auto bg-emerald-600 text-white">
+            <Badge className="ml-auto bg-tinta text-nube">
               <CheckCircle2Icon /> Conectado{status.nickname ? `: ${status.nickname}` : ""}
             </Badge>
           )}
@@ -218,7 +218,7 @@ export function MeliConnection({ status }: { status: MeliStatus }) {
             <Step n={3}>
               <p className="font-medium">Conectá tu cuenta</p>
               {status.configured && needsHttps && (
-                <div className="flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-200">
+                <div className="flex gap-2 rounded-lg border border-kraft/60 bg-kraft/15 p-3 text-[#8a4f12] dark:text-[#f0c27a]">
                   <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
                   <p>
                     Mercado Libre solo vuelve a direcciones <b>https</b>. Cerrá la app y abrila con{" "}

@@ -55,7 +55,7 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
       />
 
       {stale && (
-        <Alert className="mb-4 border-amber-500/50 text-amber-800 dark:text-amber-300">
+        <Alert className="mb-4 border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]">
           <AlertTriangleIcon />
           <AlertTitle>Este insumo no se actualiza hace más de 30 días</AlertTitle>
           <AlertDescription>
@@ -120,7 +120,7 @@ export default async function InsumoPage({ params }: { params: Promise<{ id: str
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {change && !change.isZero() ? (
-                            <span className={change.gt(0) ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"}>
+                            <span className={change.gt(0) ? "text-red-600 dark:text-red-400" : "text-tinta dark:text-menta"}>
                               {change.gt(0) ? "+" : ""}
                               {formatPercent(change)}
                             </span>

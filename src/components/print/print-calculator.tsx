@@ -224,7 +224,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
               {inks.fields.map((f, i) => (
                 <div
                   key={f.id}
-                  className="grid grid-cols-[32px_1fr_auto] items-start gap-2 sm:grid-cols-[32px_1fr_130px_150px_100px_auto]"
+                  className="grid grid-cols-[32px_minmax(0,1fr)_auto] items-start gap-2 sm:grid-cols-[32px_minmax(0,1fr)_130px_150px_100px_auto]"
                 >
                   {/* Controlado: si queda sin valor, el navegador lo pone en #000000. */}
                   <Controller
@@ -281,9 +281,9 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                       </Select>
                     )}
                   />
-                  <div className="col-span-2 sm:col-span-1">
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
                     <div className="flex gap-1">
-                      <Input inputMode="decimal" aria-label="Precio del bote" placeholder="$ bote" {...form.register(`inks.${i}.bottlePrice`)} />
+                      <Input inputMode="decimal" className="min-w-0" aria-label="Precio del bote" placeholder="$ bote" {...form.register(`inks.${i}.bottlePrice`)} />
                       <MeliSearchDialog
                         title={`Precio de la tinta ${watchedInks[i]?.name ?? ""}`.trim()}
                         defaultQuery={["tinta", inkModel, watchedInks[i]?.name].filter(Boolean).join(" ")}
@@ -306,7 +306,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                     <FieldError message={inkErrors?.[i]?.bottlePrice?.message} />
                   </div>
                   <div>
-                    <Input inputMode="numeric" aria-label="Rendimiento en páginas" placeholder="Páginas" {...form.register(`inks.${i}.yieldPages`)} />
+                    <Input inputMode="numeric" className="min-w-0" aria-label="Rendimiento en páginas" placeholder="Páginas" {...form.register(`inks.${i}.yieldPages`)} />
                     <FieldError message={inkErrors?.[i]?.yieldPages?.message} />
                   </div>
                 </div>
@@ -377,8 +377,8 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
 
             <div className="grid grid-cols-2 gap-1 rounded-xl border bg-muted/40 p-1" role="radiogroup" aria-label="Color">
               {[
-                { value: false, label: "⚫ Blanco y negro" },
-                { value: true, label: "🌈 A color" },
+                { value: false, label: "Blanco y negro", swatch: [CHANNEL_COLORS.K] },
+                { value: true, label: "A color", swatch: [CHANNEL_COLORS.C, CHANNEL_COLORS.M, CHANNEL_COLORS.Y, CHANNEL_COLORS.K] },
               ].map((o) => (
                 <button
                   key={o.label}
@@ -387,10 +387,15 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                   aria-checked={color === o.value}
                   onClick={() => setColor(o.value)}
                   className={cn(
-                    "rounded-lg px-3 py-3 text-sm font-semibold transition-colors",
+                    "flex items-center justify-center gap-2 rounded-lg px-3 py-3 text-sm font-semibold transition-colors duration-150",
                     color === o.value ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-muted",
                   )}
                 >
+                  <span className="flex -space-x-1" aria-hidden>
+                    {o.swatch.map((c) => (
+                      <span key={c} className="size-3 rounded-full ring-2 ring-card" style={{ backgroundColor: c }} />
+                    ))}
+                  </span>
                   {o.label}
                 </button>
               ))}
@@ -518,8 +523,10 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
               <>
                 <div>
                   <p className="text-xs text-muted-foreground">Tinta</p>
-                  <p className="text-3xl font-semibold text-primary">
-                    <Money value={result.ink.toString()} />
+                  <p className="text-3xl font-bold tracking-tight tabular-nums">
+                    <span className="resalte">
+                      <Money value={result.ink.toString()} />
+                    </span>
                   </p>
                 </div>
                 <ul className="grid gap-2 text-sm">

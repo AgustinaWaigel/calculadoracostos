@@ -42,7 +42,7 @@ export function EmptyState({
   return (
     <Card className="border-dashed">
       <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-        <div className="rounded-full bg-primary/10 p-3 text-primary">
+        <div className="rounded-full bg-halo/30 p-3 text-tinta dark:bg-halo/15 dark:text-halo">
           <Icon className="size-6" />
         </div>
         <div>
@@ -82,23 +82,23 @@ export function StatCard({
 }) {
   const toneClass = {
     default: "text-foreground",
-    good: "text-emerald-600 dark:text-emerald-400",
-    warn: "text-amber-600 dark:text-amber-400",
-    bad: "text-red-600 dark:text-red-400",
+    good: "text-tinta dark:text-menta",
+    warn: "text-[#9a5b13] dark:text-[#f0c27a]",
+    bad: "text-destructive",
   }[tone];
   const a = accent ? ACCENTS[accent] : null;
   return (
-    <Card className={cn("gap-1 py-4", a && cn(a.bg, a.border))}>
+    <Card className="gap-1 py-4">
       <CardContent className="px-4">
-        <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+        <div className="flex items-center justify-between gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
           <span>{label}</span>
           {Icon && (
-            <span className={cn("grid size-7 place-items-center rounded-lg", a ? a.solid : "bg-muted")}>
+            <span className={cn("grid size-8 place-items-center rounded-lg", a ? a.solid : "bg-muted")}>
               <Icon className="size-4" />
             </span>
           )}
         </div>
-        <div className={cn("mt-1 text-2xl font-semibold tabular-nums", toneClass)}>{value}</div>
+        <div className={cn("mt-1 text-3xl font-bold tracking-tight tabular-nums", toneClass)}>{value}</div>
         {hint && <div className="mt-0.5 text-xs text-muted-foreground">{hint}</div>}
       </CardContent>
     </Card>

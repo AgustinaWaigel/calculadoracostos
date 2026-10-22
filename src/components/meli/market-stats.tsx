@@ -51,12 +51,12 @@ export function MarketStats({
             {myPriceLabel}: <span className="font-medium text-foreground">{fmt(myPrice)}</span>
           </span>
           {cmp.position === "above" && (
-            <Badge variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-400">
+            <Badge variant="outline" className="border-kraft/70 text-[#8a4f12] dark:text-[#f0c27a]">
               <TrendingUpIcon /> {formatPercent(cmp.diffPercent)} sobre la mediana
             </Badge>
           )}
           {cmp.position === "below" && (
-            <Badge variant="outline" className="border-emerald-500/50 text-emerald-700 dark:text-emerald-400">
+            <Badge variant="outline" className="border-menta text-tinta dark:text-menta">
               <TrendingDownIcon /> {formatPercent(cmp.diffPercent.abs())} debajo de la mediana
             </Badge>
           )}
