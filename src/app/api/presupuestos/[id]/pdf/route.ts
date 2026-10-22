@@ -10,10 +10,16 @@ export const runtime = "nodejs";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [quote, business] = await Promise.all([
-    db.quote.findUnique({ where: { id }, include: { items: { orderBy: { sortOrder: "asc" } } } }),
-    getBusiness(),
-  ]);
+  let quote, business;
+  try {
+    [quote, business] = await Promise.all([
+      db.quote.findUnique({ where: { id }, include: { items: { orderBy: { sortOrder: "asc" } } } }),
+      getBusiness(),
+    ]);
+  } catch (e) {
+    console.error("No se pudo leer el presupuesto para el PDF", id, e);
+    return NextResponse.json({ error: "No se pudo leer el presupuesto de la base de datos" }, { status: 503 });
+  }
   if (!quote) return NextResponse.json({ error: "Presupuesto no encontrado" }, { status: 404 });
 
   const element = createElement(QuotePdf, {
@@ -42,7 +48,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     },
   }) as unknown as React.ReactElement<DocumentProps>;
 
-  const buffer = await renderToBuffer(element);
+  let buffer: Buffer;
+  try {
+    buffer = await renderToBuffer(element);
+  } catch (e) {
+    // Que el motivo se vea en el navegador y en los logs, no un 500 mudo.
+    console.error("No se pudo generar el PDF del presupuesto", id, e);
+    const message = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: `No se pudo generar el PDF: ${message}` }, { status: 500 });
+  }
   const filename = `presupuesto-${formatQuoteNumber(quote.number).slice(1)}-${quote.clientName
     .normalize("NFD")
     .replace(/[^\w]+/g, "-")

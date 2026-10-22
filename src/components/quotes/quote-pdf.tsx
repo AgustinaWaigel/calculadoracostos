@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { Document, Font, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import { quoteTotals } from "@/lib/calc/quote";
@@ -40,21 +41,28 @@ const BRAND = {
 };
 
 // Las fuentes viajan con la app (licencia OFL): Londrina Solid para títulos y precios, Karla para el resto.
-const fonts = path.join(process.cwd(), "src/assets/fonts");
-Font.register({ family: "Londrina", src: path.join(fonts, "LondrinaSolid-Regular.ttf") });
-Font.register({
-  family: "Karla",
-  fonts: [
-    { src: path.join(fonts, "Karla-400.ttf"), fontWeight: 400 },
-    { src: path.join(fonts, "Karla-700.ttf"), fontWeight: 700 },
-  ],
-});
+// Si en el servidor no aparecen los archivos, el PDF sale igual con Helvetica en vez de fallar.
+const fontsDir = path.join(process.cwd(), "src/assets/fonts");
+const fontFile = (name: string) => path.join(fontsDir, name);
+const hasBrandFonts = ["LondrinaSolid-Regular.ttf", "Karla-400.ttf", "Karla-700.ttf"].every((f) => existsSync(fontFile(f)));
+if (hasBrandFonts) {
+  Font.register({ family: "Londrina", src: fontFile("LondrinaSolid-Regular.ttf") });
+  Font.register({
+    family: "Karla",
+    fonts: [
+      { src: fontFile("Karla-400.ttf"), fontWeight: 400 },
+      { src: fontFile("Karla-700.ttf"), fontWeight: 700 },
+    ],
+  });
+}
+const DISPLAY = hasBrandFonts ? "Londrina" : "Helvetica-Bold";
+const TEXT = hasBrandFonts ? "Karla" : "Helvetica";
 Font.registerHyphenationCallback((word) => [word]);
 
 const PAD = 40;
 
 const s = StyleSheet.create({
-  page: { paddingBottom: 90, fontSize: 10, fontFamily: "Karla", color: BRAND.tinta },
+  page: { paddingBottom: 90, fontSize: 10, fontFamily: TEXT, color: BRAND.tinta },
   // Portada en vino con títulos en rosa y texto en crema, como las páginas internas de la web.
   header: {
     backgroundColor: BRAND.amanecer,
@@ -66,11 +74,11 @@ const s = StyleSheet.create({
   },
   brand: { flexDirection: "row", alignItems: "center", gap: 12 },
   logo: { width: 64, height: 64, objectFit: "contain", borderRadius: 8 },
-  businessName: { fontFamily: "Londrina", fontSize: 24, color: BRAND.nube, textTransform: "uppercase" },
+  businessName: { fontFamily: DISPLAY, fontSize: 24, color: BRAND.nube, textTransform: "uppercase" },
   contact: { color: BRAND.nube, fontSize: 9, marginTop: 1 },
-  title: { fontFamily: "Londrina", fontSize: 28, color: BRAND.lavanda, textAlign: "right", textTransform: "uppercase" },
+  title: { fontFamily: DISPLAY, fontSize: 28, color: BRAND.lavanda, textAlign: "right", textTransform: "uppercase" },
   meta: { textAlign: "right", color: BRAND.nube, fontSize: 9, marginTop: 1 },
-  number: { textAlign: "right", color: BRAND.nube, fontFamily: "Londrina", fontSize: 14 },
+  number: { textAlign: "right", color: BRAND.nube, fontFamily: DISPLAY, fontSize: 14 },
   // Cinta de colores debajo de la portada.
   ribbon: { flexDirection: "row", height: 6 },
   body: { paddingHorizontal: PAD, paddingTop: 26 },
@@ -82,7 +90,7 @@ const s = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 3,
   },
-  clientName: { fontFamily: "Londrina", fontSize: 18, color: BRAND.tinta },
+  clientName: { fontFamily: DISPLAY, fontSize: 18, color: BRAND.tinta },
   muted: { color: BRAND.tintaSuave },
   section: { marginBottom: 20 },
   table: { borderRadius: 6, overflow: "hidden", borderWidth: 1, borderColor: BRAND.tinta },
@@ -109,8 +117,8 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: BRAND.tinta,
   },
-  grandLabel: { fontFamily: "Londrina", fontSize: 16, textTransform: "uppercase" },
-  grandValue: { fontFamily: "Londrina", fontSize: 18 },
+  grandLabel: { fontFamily: DISPLAY, fontSize: 16, textTransform: "uppercase" },
+  grandValue: { fontFamily: DISPLAY, fontSize: 18 },
   validity: { marginTop: 8, textAlign: "right", fontSize: 9, color: BRAND.tintaSuave },
   notes: { marginTop: 24, padding: 12, backgroundColor: BRAND.cielo, borderRadius: 6 },
   // Pie verde oscuro con la frase en lima.
@@ -126,7 +134,7 @@ const s = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  footerPhrase: { fontFamily: "Londrina", fontSize: 13, color: BRAND.halo },
+  footerPhrase: { fontFamily: DISPLAY, fontSize: 13, color: BRAND.halo },
   footerMeta: { fontSize: 8, color: BRAND.nube },
 });
 
