@@ -1,13 +1,13 @@
-// Montos y cantidades en Decimal (en SQLite y en Postgres) → sin floats.
-// Para migrar a Postgres/Supabase: cambiá provider a "postgresql" y DATABASE_URL.
+// Montos y cantidades en Decimal → sin floats. Base: Postgres en Supabase.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ───────── Emprendimiento y configuración ─────────

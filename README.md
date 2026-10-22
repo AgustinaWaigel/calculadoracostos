@@ -16,7 +16,7 @@ App web para emprendedores argentinos (imprenta, sublimación, laminado, manuali
 
 ## Stack
 
-Next.js 15 (App Router) · TypeScript estricto · Tailwind CSS 4 + shadcn/ui · React Hook Form + Zod · Prisma + SQLite · Recharts · @react-pdf/renderer · decimal.js · Vitest.
+Next.js 15 (App Router) · TypeScript estricto · Tailwind CSS 4 + shadcn/ui · React Hook Form + Zod · Prisma + Postgres (Supabase) · Recharts · @react-pdf/renderer · decimal.js · Vitest.
 
 ## Instalación
 
@@ -25,7 +25,7 @@ Requisitos: Node.js 20 o superior.
 ```bash
 npm install                 # también corre `prisma generate`
 cp .env.example .env        # en Windows: copy .env.example .env
-npx prisma migrate dev      # crea la base SQLite y carga los datos de ejemplo
+npx prisma migrate dev      # crea las tablas en Supabase y carga los datos de ejemplo
 npm run dev                 # http://localhost:3000
 ```
 
@@ -50,7 +50,8 @@ Para volver a cargar los datos de ejemplo desde cero: `npm run db:reset`.
 
 | Variable | Descripción |
 |---|---|
-| `DATABASE_URL` | `file:./dev.db` para SQLite. Para Postgres o Supabase, el connection string. |
+| `DATABASE_URL` | Connection string de Supabase por el pooler (puerto 6543, con `?pgbouncer=true`). Lo usa la app. |
+| `DIRECT_URL` | Connection string directo (puerto 5432). Lo usan las migraciones de Prisma. |
 | `NEXT_PUBLIC_APP_URL` | URL pública de la app |
 | `MELI_CLIENT_ID` | App ID de tu aplicación de Mercado Libre |
 | `MELI_CLIENT_SECRET` | Clave secreta de la app. **Queda solo en el servidor.** |
@@ -116,12 +117,11 @@ Ejemplo: botes CMYK de $12.000 (negro rinde 7.500 páginas, colores 6.000), foto
 
 El resultado se guarda como insumo (servicio) para usarlo en las recetas. Si ya existe un insumo con el mismo nombre, se actualiza su precio. Las coberturas de los presets son orientativas.
 
-## Migrar a Postgres o Supabase
+## Base de datos (Supabase)
 
-1. En `prisma/schema.prisma` cambiá `provider = "sqlite"` por `provider = "postgresql"`.
-2. Poné el connection string en `DATABASE_URL` (en Supabase: *Project Settings → Database*).
-3. Borrá `prisma/migrations` y corré `npx prisma migrate dev --name init`.
-4. Para llevarte los datos: exportá el backup JSON desde **Ajustes** antes del cambio y restauralo después.
+1. En Supabase: **Connect → ORMs → Prisma** y copiá `DATABASE_URL` y `DIRECT_URL` al `.env` (con tu contraseña, sin corchetes).
+2. Corré `npx prisma migrate dev` para crear las tablas.
+3. Para pasar datos entre bases: exportá el backup JSON desde **Ajustes** y restauralo en la otra.
 
 Para varios usuarios habría que sumar auth (por ejemplo Supabase Auth) y un `businessId` en cada tabla.
 
