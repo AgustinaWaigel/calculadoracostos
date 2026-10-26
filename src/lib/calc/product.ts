@@ -16,6 +16,8 @@ export interface RecipeLaborLine {
   hourlyRate: DecimalInput;
   /** Minutos por LOTE. */
   minutes: DecimalInput;
+  /** true (por defecto) = lo hacés vos: entra en el precio, pero es plata que te queda. */
+  isOwn?: boolean;
 }
 
 export interface RecipeMachineLine extends MachineInput {
@@ -51,6 +53,8 @@ export interface ProductCostBreakdown {
   materials: Decimal;
   waste: Decimal;
   labor: Decimal;
+  /** La parte de `labor` que hacés vos (te queda a vos, no se le paga a nadie). */
+  ownLabor: Decimal;
   machines: Decimal;
   fixed: Decimal;
   /** Costo variable = materiales + merma + mano de obra + máquinas. */
@@ -91,6 +95,7 @@ export function computeProductCost(input: ProductCostInput): ProductCostBreakdow
   const batchMaterials = sum(supplies.map((l) => l.batchCost));
   const batchWaste = batchMaterials.times(pct(input.wastePercent ?? 0));
   const batchLabor = sum(labor.map((l) => l.batchCost));
+  const batchOwnLabor = sum(labor.filter((_, i) => input.labor![i].isOwn !== false).map((l) => l.batchCost));
   const batchMachines = sum(machines.map((l) => l.batchCost));
   const batchVariable = batchMaterials.plus(batchWaste).plus(batchLabor).plus(batchMachines);
 
@@ -105,6 +110,7 @@ export function computeProductCost(input: ProductCostInput): ProductCostBreakdow
     materials,
     waste,
     labor: laborUnit,
+    ownLabor: batchOwnLabor.div(batchYield),
     machines: machinesUnit,
     fixed,
     variable,

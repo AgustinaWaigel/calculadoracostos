@@ -93,6 +93,7 @@ export const laborProfileSchema = z.object({
   id: idField.optional(),
   name: requiredText("El nombre", 60),
   hourlyRate: decimalField({ min: 0, label: "El valor hora" }),
+  isOwn: z.boolean().default(true),
   color: optionalText(20),
 });
 export type LaborProfileInput = z.input<typeof laborProfileSchema>;

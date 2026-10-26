@@ -72,3 +72,19 @@ describe("computeProductCost", () => {
     expect(() => computeProductCost({ supplies: [], batchYield: 0 })).toThrow();
   });
 });
+
+describe("mano de obra propia", () => {
+  it("separa lo que hacés vos de lo que le pagás a otro, sin cambiar el costo", () => {
+    const cost = computeProductCost({
+      supplies: [],
+      labor: [
+        { hourlyRate: 6000, minutes: 30 }, // propia por defecto
+        { hourlyRate: 4000, minutes: 30, isOwn: false },
+      ],
+      batchYield: 2,
+    });
+    expect(cost.labor.toNumber()).toBe(2500);
+    expect(cost.ownLabor.toNumber()).toBe(1500);
+    expect(cost.total.toNumber()).toBe(2500);
+  });
+});

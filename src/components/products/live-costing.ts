@@ -48,7 +48,7 @@ export function computeLive(values: LiveValues, options: EditorOptions): LiveRes
       labor: (values.labor ?? []).flatMap((line) => {
         const p = line.profileId ? profileById.get(line.profileId) : undefined;
         const m = num(line.minutes);
-        return p && m && m.gt(0) ? [{ id: p.id, name: p.name, hourlyRate: p.hourlyRate, minutes: m }] : [];
+        return p && m && m.gt(0) ? [{ id: p.id, name: p.name, hourlyRate: p.hourlyRate, minutes: m, isOwn: p.isOwn }] : [];
       }),
       machines: (values.machines ?? []).flatMap((line) => {
         const m = line.machineId ? machineById.get(line.machineId) : undefined;

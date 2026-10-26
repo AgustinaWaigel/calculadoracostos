@@ -36,6 +36,10 @@ export interface ProductPricingSummary {
   basePrice: Decimal;
   /** Ganancia neta por unidad que se busca mantener en todos los canales. */
   targetProfit: Decimal;
+  /** Mano de obra propia por unidad: está dentro del costo, pero te la quedás vos. */
+  ownLabor: Decimal;
+  /** Lo que te queda a vos por unidad: margen + tu propio trabajo. */
+  takeHome: Decimal;
   channels: ChannelOutcome[];
   /** Canal de referencia (venta directa o el primero que funcione). */
   reference: (ChannelPriceResult & { ok: true; type?: string }) | null;
@@ -98,5 +102,16 @@ export function summarizeProductPricing(args: {
     volume = volumeTable(reference.price, cost.total, args.tiers);
   }
 
-  return { mode, percent, basePrice, targetProfit, channels, reference, breakEven: be, volume };
+  return {
+    mode,
+    percent,
+    basePrice,
+    targetProfit,
+    ownLabor: cost.ownLabor,
+    takeHome: targetProfit.plus(cost.ownLabor),
+    channels,
+    reference,
+    breakEven: be,
+    volume,
+  };
 }

@@ -97,6 +97,8 @@ model LaborProfile {
   id         String         @id @default(cuid())
   name       String
   hourlyRate Decimal
+  /// true = lo hace el dueño (es ganancia suya); false = se le paga a otra persona (es costo).
+  isOwn      Boolean        @default(true)
   color      String?
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt

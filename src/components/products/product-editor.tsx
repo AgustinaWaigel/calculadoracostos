@@ -559,23 +559,41 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
             {live.error && <p className="text-xs text-destructive">{live.error}</p>}
             {live.summary && ref && (
               <dl className="grid gap-1.5 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Ganancia por unidad</dt>
-                  <dd>
-                    <Money value={live.summary.targetProfit.toString()} />
-                  </dd>
-                </div>
-                <div className="flex justify-between">
+                <div className="mb-1 flex justify-between">
                   <dt className="text-muted-foreground">{ref.channelName}</dt>
                   <dd className="text-lg font-semibold">
                     <Money value={ref.price.toString()} />
                   </dd>
                 </div>
+                {live.summary.ownLabor.gt(0) && (
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Tu trabajo</dt>
+                    <dd>
+                      <Money value={live.summary.ownLabor.toString()} />
+                    </dd>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">
+                    {mode === "MARGIN" ? "Margen" : "Markup"} ({formatPercent(live.summary.percent, 0)})
+                  </dt>
+                  <dd>
+                    <Money value={live.summary.targetProfit.toString()} />
+                  </dd>
+                </div>
+                <div className="flex justify-between border-t pt-1.5 font-semibold">
+                  <dt>Te queda por unidad</dt>
+                  <dd className="text-tinta dark:text-menta">
+                    <Money value={live.summary.takeHome.toString()} />
+                  </dd>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {mode === "MARGIN" ? "Margen" : "Markup"} de {formatPercent(live.summary.percent, 0)}
+                  {live.summary.ownLabor.gt(0)
+                    ? "Tu trabajo va dentro del costo para que el precio lo cubra, pero esa plata es tuya."
+                    : "Sin trabajo propio cargado: solo te queda el margen."}
                   {defaults?.id && (
                     <>
-                      {" · "}
+                      {" "}
                       <Link href={`/productos/${defaults.id}/precio`} className="text-primary underline">
                         ver todos los canales
                       </Link>

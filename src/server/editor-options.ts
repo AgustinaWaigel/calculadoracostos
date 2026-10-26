@@ -54,7 +54,7 @@ export async function getEditorOptions(): Promise<EditorOptions> {
       packQuantity: s.packQuantity.toString(),
       unitCost: supplyUnitCost(s).toString(),
     })),
-    profiles: profiles.map((p) => ({ id: p.id, name: p.name, hourlyRate: p.hourlyRate.toString(), color: p.color })),
+    profiles: profiles.map((p) => ({ id: p.id, name: p.name, hourlyRate: p.hourlyRate.toString(), isOwn: p.isOwn, color: p.color })),
     machines: machines.map((m) => ({
       id: m.id,
       name: m.name,

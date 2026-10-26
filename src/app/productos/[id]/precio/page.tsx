@@ -57,10 +57,20 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
           value={formatPercent(pricing.percent, 0)}
         />
         <StatCard
-          label="Ganancia por unidad"
+          label="Te queda por unidad"
           icon={CoinsIcon}
           accent="amanecer"
-          value={<Money value={pricing.targetProfit.toString()} />}
+          value={<Money value={pricing.takeHome.toString()} />}
+          hint={
+            pricing.ownLabor.gt(0) ? (
+              <>
+                tu trabajo <Money value={pricing.ownLabor.toString()} /> + margen{" "}
+                <Money value={pricing.targetProfit.toString()} />
+              </>
+            ) : (
+              "solo margen (sin trabajo propio)"
+            )
+          }
         />
         <StatCard
           label="Punto de equilibrio"
@@ -127,10 +137,16 @@ export default async function PrecioPage({ params }: { params: Promise<{ id: str
                     </TableCell>
                     <TableCell className="text-right">
                       <span className={c.isLoss ? "text-destructive" : "text-tinta dark:text-menta"}>
-                        <Money value={c.netProfit.toString()} />
+                        <Money value={c.netProfit.plus(pricing.ownLabor).toString()} />
                       </span>
                       <span className="block text-xs text-muted-foreground">
-                        {formatPercent(c.netMarginPercent, 0)} del precio
+                        {pricing.ownLabor.gt(0) ? (
+                          <>
+                            <Money value={c.netProfit.toString()} /> de margen ({formatPercent(c.netMarginPercent, 0)})
+                          </>
+                        ) : (
+                          <>{formatPercent(c.netMarginPercent, 0)} del precio</>
+                        )}
                       </span>
                     </TableCell>
                   </TableRow>

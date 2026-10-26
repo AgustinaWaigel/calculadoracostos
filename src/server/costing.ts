@@ -60,6 +60,7 @@ export function costProduct(product: ProductWithRecipe, ctx: CostingContext): Pr
       name: l.profile.name,
       hourlyRate: l.profile.hourlyRate,
       minutes: l.minutes,
+      isOwn: l.profile.isOwn,
     })),
     machines: product.machines.map((m) => ({
       id: m.machineId,

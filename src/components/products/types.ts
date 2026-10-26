@@ -12,7 +12,7 @@ export interface EditorOptions {
     packQuantity: string;
     unitCost: string;
   }[];
-  profiles: { id: string; name: string; hourlyRate: string; color: string | null }[];
+  profiles: { id: string; name: string; hourlyRate: string; isOwn: boolean; color: string | null }[];
   machines: { id: string; name: string; price: string; usefulLife: string; lifeUnit: "UNITS" | "HOURS" }[];
   fixedPerUnit: string;
   monthlyFixed: string;

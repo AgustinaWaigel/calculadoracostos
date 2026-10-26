@@ -74,6 +74,8 @@ export default async function ManoDeObraPage() {
                       <div className="min-w-0 flex-1">
                         <p className="font-medium">{p.name}</p>
                         <p className="text-xs text-muted-foreground">
+                          {p.isOwn ? "Lo hacés vos: es ganancia" : "Se le paga a alguien: es costo"}
+                          {" · "}
                           {p._count.usedIn > 0 ? `En ${p._count.usedIn} producto(s)` : "Sin usar todavía"}
                           {" · "}
                           <Money value={p.hourlyRate.div(60).toString()} /> por minuto
@@ -99,6 +101,7 @@ export default async function ManoDeObraPage() {
                           id: p.id,
                           name: p.name,
                           hourlyRate: p.hourlyRate.toString(),
+                          isOwn: p.isOwn,
                           color: p.color,
                         }}
                         trigger={
