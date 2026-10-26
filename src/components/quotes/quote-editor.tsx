@@ -1,25 +1,28 @@
 "use client";
 
+import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2Icon, PlusIcon, SaveIcon, Trash2Icon } from "lucide-react";
+import { Loader2Icon, PlusIcon, SaveIcon, TagIcon, Trash2Icon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldError } from "@/components/shared/ui-bits";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Field, FieldError, InfoTooltip } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { Combobox } from "@/components/shared/combobox";
 import { useAction } from "@/components/shared/use-action";
 import { saveQuote } from "@/actions/quotes";
 import { quoteSchema, type QuoteData, type QuoteInput } from "@/lib/schemas";
-import { quoteTotals } from "@/lib/calc/quote";
-import { discountForQuantity } from "@/lib/calc/pricing";
-import { D, formatMoney, parseMoneyInput, pct, roundCents, toInputString } from "@/lib/money";
+import { quoteBreakdown, volumePrice, type VolumePrice } from "@/lib/calc/quote";
+import { D, formatMoney, formatPercent, parseMoneyInput, toInputString } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { QuoteFormValues, QuoteProductOption } from "./types";
 
 const CUSTOM = "__custom__";
+const EXTRA_CHIPS = [0, 5, 10, 15];
 
 export function QuoteEditor({
   products,
@@ -51,21 +54,55 @@ export function QuoteEditor({
   const items = useFieldArray({ control, name: "items" });
   const { pending, run } = useAction<QuoteInput>(setError);
   const productById = new Map(products.map((p) => [p.id, p]));
+  const activeTiers = tiers.filter((t) => D(t.discountPercent).gt(0)).sort((a, b) => a.minQuantity - b.minQuantity);
+
+  const qtyOf = (v: unknown) => parseMoneyInput(String(v ?? ""))?.toNumber() ?? 0;
+  /** Precio sugerido de un producto para esa cantidad (con el descuento por cantidad que toque). */
+  const suggest = (productId: string | null | undefined, quantity: unknown): VolumePrice | null => {
+    const p = productId ? productById.get(productId) : undefined;
+    return p ? volumePrice(p.price, Math.max(qtyOf(quantity), 1), tiers) : null;
+  };
+
+  // Ítems con el precio escrito a mano: no se lo pisamos al cambiar la cantidad.
+  const [manual, setManual] = useState<Set<string>>(() => {
+    const set = new Set<string>();
+    defaults.items.forEach((item, i) => {
+      const s = suggest(item.productId, item.quantity);
+      const id = items.fields[i]?.id;
+      if (id && s && !s.unitPrice.eq(D(item.unitPrice))) set.add(id);
+    });
+    return set;
+  });
+  const markManual = (id: string, on: boolean) =>
+    setManual((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
 
   const watched = useWatch({ control });
-  const parsedItems = (watched.items ?? []).map((i) => ({
-    quantity: parseMoneyInput(String(i?.quantity ?? "")) ?? D(0),
-    unitPrice: parseMoneyInput(String(i?.unitPrice ?? "")) ?? D(0),
-  }));
-  const totals = quoteTotals(parsedItems, parseMoneyInput(String(watched.discountPercent ?? "")) ?? 0);
+  const lines = (watched.items ?? []).map((item, i) => {
+    const id = items.fields[i]?.id ?? "";
+    const quantity = parseMoneyInput(String(item?.quantity ?? "")) ?? D(0);
+    const unitPrice = parseMoneyInput(String(item?.unitPrice ?? "")) ?? D(0);
+    const suggested = suggest(item?.productId, item?.quantity);
+    const isManual = manual.has(id);
+    return { id, quantity, unitPrice, suggested, isManual };
+  });
+  const extraPercent = parseMoneyInput(String(watched.discountPercent ?? "")) ?? D(0);
+  const totals = quoteBreakdown(
+    lines.map((l) => ({
+      quantity: l.quantity,
+      unitPrice: l.unitPrice,
+      listPrice: !l.isManual && l.suggested?.discountPercent.gt(0) ? l.suggested.listPrice : null,
+    })),
+    extraPercent,
+  );
 
-  /** Precio sugerido para esa cantidad (aplica el tramo de volumen). */
-  function suggestedPrice(productId: string, quantity: string) {
-    const p = productById.get(productId);
-    if (!p) return null;
-    const q = parseMoneyInput(quantity)?.toNumber() ?? 1;
-    const disc = discountForQuantity(q, tiers);
-    return roundCents(D(p.price).times(D(1).minus(pct(disc)))).toString();
+  function setSuggestedPrice(index: number, productId: string | null | undefined, quantity: unknown) {
+    const s = suggest(productId, quantity);
+    if (s) setValue(`items.${index}.unitPrice`, toInputString(s.unitPrice), { shouldValidate: true });
   }
 
   function onProductChange(index: number, productId: string) {
@@ -77,15 +114,8 @@ export function QuoteEditor({
     if (!p) return;
     setValue(`items.${index}.productId`, productId);
     setValue(`items.${index}.description`, p.name, { shouldValidate: true });
-    const price = suggestedPrice(productId, String(getValues(`items.${index}.quantity`)));
-    if (price) setValue(`items.${index}.unitPrice`, toInputString(price), { shouldValidate: true });
-  }
-
-  function onQuantityBlur(index: number) {
-    const productId = getValues(`items.${index}.productId`);
-    if (!productId) return;
-    const price = suggestedPrice(productId, String(getValues(`items.${index}.quantity`)));
-    if (price) setValue(`items.${index}.unitPrice`, toInputString(price));
+    markManual(items.fields[index].id, false);
+    setSuggestedPrice(index, productId, getValues(`items.${index}.quantity`));
   }
 
   const onSubmit = form.handleSubmit(() =>
@@ -99,7 +129,7 @@ export function QuoteEditor({
   );
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4 lg:grid-cols-[1fr_320px]">
+    <form onSubmit={onSubmit} className="grid gap-4 lg:grid-cols-[1fr_340px]">
       <div className="grid content-start gap-4">
         <Card>
           <CardHeader>
@@ -120,13 +150,29 @@ export function QuoteEditor({
 
         <Card>
           <CardHeader>
-            <CardTitle>Ítems</CardTitle>
+            <CardTitle>Qué le cotizás</CardTitle>
+            {activeTiers.length > 0 && (
+              <CardDescription className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                Descuento por cantidad (se aplica solo al precio):
+                {activeTiers.map((t) => (
+                  <span key={t.minQuantity} className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+                    {t.minQuantity}+ → −{formatPercent(t.discountPercent, 0)}
+                  </span>
+                ))}
+                <Link href="/ajustes" className="text-xs text-primary underline">
+                  cambiar
+                </Link>
+              </CardDescription>
+            )}
           </CardHeader>
-          <CardContent className="grid gap-4">
+          <CardContent className="grid gap-3">
             {items.fields.map((f, i) => {
               const productId = watched.items?.[i]?.productId;
+              const line = lines[i];
+              const s = line?.suggested;
+              const volumeApplied = s && !line.isManual && s.discountPercent.gt(0);
               return (
-                <div key={f.id} className="grid gap-2 rounded-lg border p-3">
+                <div key={f.id} className="grid gap-2 rounded-xl border bg-background/50 p-3">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <Combobox
                       ariaLabel="Producto"
@@ -143,8 +189,8 @@ export function QuoteEditor({
                       <FieldError message={errors.items?.[i]?.description?.message} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-[1fr_1fr_auto] items-start gap-2 sm:grid-cols-[120px_160px_1fr_auto]">
-                    <div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-2 sm:grid-cols-[110px_150px_minmax(0,1fr)_auto]">
+                    <Field label="Cantidad" className="gap-1">
                       <Controller
                         control={control}
                         name={`items.${i}.quantity`}
@@ -152,29 +198,83 @@ export function QuoteEditor({
                           <Input
                             inputMode="decimal"
                             aria-label="Cantidad"
-                            placeholder="Cant."
                             value={String(field.value ?? "")}
-                            onChange={field.onChange}
-                            onBlur={() => {
-                              field.onBlur();
-                              onQuantityBlur(i);
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // El precio acompaña la cantidad (tramos de descuento), salvo que lo hayas escrito vos.
+                              if (!manual.has(f.id)) setSuggestedPrice(i, getValues(`items.${i}.productId`), e.target.value);
                             }}
+                            onBlur={field.onBlur}
                           />
                         )}
                       />
-                      <FieldError message={errors.items?.[i]?.quantity?.message} />
+                    </Field>
+                    <Field label="Precio c/u" className="gap-1">
+                      <Input
+                        inputMode="decimal"
+                        aria-label="Precio por unidad"
+                        placeholder="$"
+                        {...register(`items.${i}.unitPrice`, { onChange: () => s && markManual(f.id, true) })}
+                      />
+                    </Field>
+                    <div className="hidden pb-1.5 text-right sm:block">
+                      <p className="text-xs text-muted-foreground">Subtotal</p>
+                      <Money value={totals.lines[i]?.toString() ?? 0} className="font-semibold" />
                     </div>
-                    <div>
-                      <Input inputMode="decimal" aria-label="Precio unitario" placeholder="Precio c/u" {...register(`items.${i}.unitPrice`)} />
-                      <FieldError message={errors.items?.[i]?.unitPrice?.message} />
-                    </div>
-                    <div className="hidden self-center text-right font-medium sm:block">
-                      <Money value={totals.lines[i]?.toString() ?? 0} />
-                    </div>
-                    <Button type="button" variant="ghost" size="icon-sm" aria-label="Quitar ítem" onClick={() => items.remove(i)}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      className="mb-1"
+                      aria-label="Quitar ítem"
+                      onClick={() => items.remove(i)}
+                    >
                       <Trash2Icon />
                     </Button>
                   </div>
+                  <FieldError message={errors.items?.[i]?.quantity?.message ?? errors.items?.[i]?.unitPrice?.message} />
+
+                  {/* Qué pasó con el precio de este ítem, en una línea. */}
+                  {s && (
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                      {volumeApplied ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-halo/35 px-2 py-0.5 font-semibold text-tinta dark:bg-halo/15 dark:text-halo">
+                            <TagIcon className="size-3" />−{formatPercent(s.discountPercent, 0)} por cantidad ({s.tierMin} o más)
+                          </span>
+                          <span className="text-muted-foreground">
+                            lista <Money value={s.listPrice.toString()} className="line-through" />
+                          </span>
+                        </>
+                      ) : line.isManual ? (
+                        <>
+                          <span className="text-muted-foreground">
+                            Precio a mano · sugerido <Money value={s.unitPrice.toString()} />
+                          </span>
+                          <button
+                            type="button"
+                            className="font-semibold text-primary underline-offset-2 hover:underline"
+                            onClick={() => {
+                              markManual(f.id, false);
+                              setSuggestedPrice(i, productId, getValues(`items.${i}.quantity`));
+                            }}
+                          >
+                            Usar sugerido
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">Precio de lista</span>
+                      )}
+                      {!line.isManual && s.next && (
+                        <span className="text-muted-foreground">
+                          · con {s.next.minQuantity} o más: −{formatPercent(s.next.discountPercent, 0)}
+                        </span>
+                      )}
+                      <span className="ml-auto font-semibold sm:hidden">
+                        <Money value={totals.lines[i]?.toString() ?? 0} />
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -208,34 +308,96 @@ export function QuoteEditor({
             <CardTitle>Resumen</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <Field label="Válido hasta" htmlFor="q-valid" error={errors.validUntil?.message}>
-              <Input id="q-valid" type="date" {...register("validUntil")} />
-            </Field>
-            <Field label="Descuento general (%)" htmlFor="q-disc" error={errors.discountPercent?.message}>
-              <Input id="q-disc" inputMode="decimal" {...register("discountPercent")} />
-            </Field>
-            <dl className="grid gap-1 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Subtotal</dt>
+            <dl className="grid gap-1.5 text-sm">
+              {totals.volumeDiscount.gt(0) && (
+                <>
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">A precio de lista</dt>
+                    <dd>
+                      <Money value={totals.atList.toString()} />
+                    </dd>
+                  </div>
+                  <div className="flex justify-between text-tinta dark:text-menta">
+                    <dt>Descuento por cantidad</dt>
+                    <dd>
+                      − <Money value={totals.volumeDiscount.toString()} />
+                    </dd>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between font-medium">
+                <dt>Subtotal</dt>
                 <dd>
                   <Money value={totals.subtotal.toString()} />
                 </dd>
               </div>
+            </dl>
+
+            <Field
+              label={
+                <span className="flex items-center gap-1">
+                  Descuento extra
+                  <InfoTooltip>
+                    Un descuento sobre el total, aparte del de cantidad (que ya está en el precio de cada ítem). Por
+                    ejemplo, por pago en efectivo o cliente frecuente.
+                  </InfoTooltip>
+                </span>
+              }
+              htmlFor="q-disc"
+              error={errors.discountPercent?.message}
+            >
+              <div className="flex items-center gap-1.5">
+                <div className="grid flex-1 grid-cols-4 gap-1 rounded-lg border bg-muted/40 p-0.5" role="radiogroup" aria-label="Descuento extra rápido">
+                  {EXTRA_CHIPS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      role="radio"
+                      aria-checked={extraPercent.eq(c)}
+                      onClick={() => setValue("discountPercent", String(c), { shouldValidate: true, shouldDirty: true })}
+                      className={cn(
+                        "rounded-md py-1 text-xs font-semibold tabular-nums transition-colors duration-150",
+                        extraPercent.eq(c) ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      {c === 0 ? "No" : `${c}%`}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex w-20 items-center gap-1">
+                  <Input id="q-disc" inputMode="decimal" className="text-right" aria-label="Otro porcentaje" {...register("discountPercent")} />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            </Field>
+
+            <dl className="grid gap-1.5 text-sm">
               {totals.discount.gt(0) && (
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Descuento</dt>
+                <div className="flex justify-between text-tinta dark:text-menta">
+                  <dt>Descuento extra {formatPercent(extraPercent, 0)}</dt>
                   <dd>
                     − <Money value={totals.discount.toString()} />
                   </dd>
                 </div>
               )}
-              <div className="flex justify-between border-t pt-2 text-lg font-semibold">
-                <dt>Total</dt>
-                <dd>
-                  <Money value={totals.total.toString()} />
+              <div className="flex items-baseline justify-between border-t pt-2">
+                <dt className="text-base font-semibold">Total</dt>
+                <dd className="text-2xl font-bold tracking-tight tabular-nums">
+                  <span className="resalte">
+                    <Money value={totals.total.toString()} />
+                  </span>
                 </dd>
               </div>
+              {(totals.volumeDiscount.gt(0) || totals.discount.gt(0)) && (
+                <p className="text-right text-xs text-muted-foreground">
+                  Le ahorrás <Money value={totals.volumeDiscount.plus(totals.discount).toString()} /> en total.
+                </p>
+              )}
             </dl>
+
+            <Field label="Válido hasta" htmlFor="q-valid" error={errors.validUntil?.message}>
+              <Input id="q-valid" type="date" {...register("validUntil")} />
+            </Field>
             <Button type="submit" disabled={pending}>
               {pending ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
               {defaults.id ? "Guardar cambios" : "Crear presupuesto"}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { quoteTotals } from "@/lib/calc/quote";
+import { quoteBreakdown, quoteTotals, volumePrice } from "@/lib/calc/quote";
 import { buildQuoteMessage } from "@/lib/quote-text";
 
 describe("presupuestos", () => {
@@ -34,5 +34,42 @@ describe("presupuestos", () => {
     expect(msg).toMatch(/\*Total: \$\s?39\.510,90\*/);
     expect(msg).toContain("martes, 27 de octubre");
     expect(msg).toContain("Seña del 50%.");
+  });
+
+  const tiers = [
+    { minQuantity: 1, discountPercent: "0" },
+    { minQuantity: 10, discountPercent: "5" },
+    { minQuantity: 100, discountPercent: "15" },
+    { minQuantity: 200, discountPercent: "20" },
+  ];
+
+  it("precio por cantidad: tramo aplicado y el siguiente", () => {
+    const pocas = volumePrice("1000", 5, tiers);
+    expect(pocas.discountPercent.toString()).toBe("0");
+    expect(pocas.tierMin).toBeNull();
+    expect(pocas.next).toEqual({ minQuantity: 10, discountPercent: expect.anything() });
+
+    const cien = volumePrice("329.41", 100, tiers);
+    expect(cien.discountPercent.toString()).toBe("15");
+    expect(cien.tierMin).toBe(100);
+    expect(cien.unitPrice.toString()).toBe("280"); // 329,41 × 0,85 = 279,9985 → 280,00
+    expect(cien.next?.minQuantity).toBe(200);
+
+    expect(volumePrice("100", 500, tiers).next).toBeNull();
+  });
+
+  it("desglose: lista, descuento por cantidad y descuento extra", () => {
+    const b = quoteBreakdown(
+      [
+        { quantity: "100", unitPrice: "280", listPrice: "329.41" }, // con descuento por cantidad
+        { quantity: "1", unitPrice: "6000" }, // precio a mano
+      ],
+      10,
+    );
+    expect(b.subtotal.toString()).toBe("34000");
+    expect(b.volumeDiscount.toString()).toBe("4941");
+    expect(b.atList.toString()).toBe("38941");
+    expect(b.discount.toString()).toBe("3400");
+    expect(b.total.toString()).toBe("30600");
   });
 });

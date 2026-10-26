@@ -72,13 +72,21 @@ export function Combobox({
           role="combobox"
           aria-expanded={open}
           aria-label={ariaLabel}
-          className={cn("w-full justify-between font-normal", !selected && "text-muted-foreground", className)}
+          title={selected?.label}
+          className={cn(
+            "h-auto min-h-9 w-full justify-between py-1.5 text-left font-normal whitespace-normal",
+            !selected && "text-muted-foreground",
+            className,
+          )}
         >
-          <span className="truncate">{selected?.label ?? placeholder}</span>
-          <ChevronsUpDownIcon className="opacity-50" />
+          <span className="min-w-0 wrap-break-word">{selected?.label ?? placeholder}</span>
+          <ChevronsUpDownIcon className="shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-(--radix-popover-trigger-width) min-w-72 p-0" align="start">
+      <PopoverContent
+        className="w-96 max-w-[calc(100vw-2rem)] min-w-(--radix-popover-trigger-width) p-0"
+        align="start"
+      >
         <Command>
           <CommandInput ref={searchRef} placeholder={searchPlaceholder} value={search} onValueChange={setSearch} />
           {filters && (
@@ -117,8 +125,8 @@ export function Combobox({
                   }}
                 >
                   <CheckIcon className={cn(o.value === value ? "opacity-100" : "opacity-0")} />
-                  <span className="flex-1 truncate">{o.label}</span>
-                  {o.hint && <span className="text-xs text-muted-foreground">{o.hint}</span>}
+                  <span className="min-w-0 flex-1 wrap-break-word">{o.label}</span>
+                  {o.hint && <span className="shrink-0 text-xs whitespace-nowrap text-muted-foreground">{o.hint}</span>}
                 </CommandItem>
               ))}
             </CommandGroup>
