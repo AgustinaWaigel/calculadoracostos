@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isPriceStale, priceChangePercent, priceIncrease, supplyUnitCost } from "@/lib/calc/supply";
 import { compareHourlyRate, laborCost, suggestedHourlyRate } from "@/lib/calc/labor";
 import {
+  fixedCostPerMinute,
   fixedCostPerUnit,
   machineAmortizationRate,
   machineUsageCost,
@@ -67,5 +68,12 @@ describe("costos fijos", () => {
     expect(machineAmortizationRate(plastificadora).toString()).toBe("6");
     const plancha = { price: 600000, usefulLife: 2000, lifeUnit: "HOURS" as const };
     expect(machineUsageCost(plancha, 30).toString()).toBe("150");
+  });
+});
+
+describe("fixedCostPerMinute", () => {
+  it("reparte los fijos del mes por minuto trabajado", () => {
+    expect(fixedCostPerMinute(60000, 100).toNumber()).toBe(10);
+    expect(fixedCostPerMinute(60000, 0).toNumber()).toBe(0);
   });
 });

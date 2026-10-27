@@ -35,8 +35,12 @@ export interface ProductCostInput {
   batchYield?: DecimalInput;
   /** Merma de materiales, en % (se suma al costo de materiales). */
   wastePercent?: DecimalInput;
-  /** Costos fijos prorrateados por unidad (ya calculados). */
+  /** Costos fijos prorrateados por unidad normal (ya calculados). */
   fixedCostPerUnit?: DecimalInput;
+  /** Cuántas unidades normales equivale este producto (chico 0,5 · grande 3). Multiplica a fixedCostPerUnit. */
+  fixedWeight?: DecimalInput;
+  /** Si viene, los fijos se reparten por tiempo: $/minuto × minutos de trabajo por unidad (ignora lo de arriba). */
+  fixedCostPerMinute?: DecimalInput;
 }
 
 export interface LineCost {
@@ -57,6 +61,8 @@ export interface ProductCostBreakdown {
   ownLabor: Decimal;
   machines: Decimal;
   fixed: Decimal;
+  /** Minutos de trabajo por unidad terminada (todas las tareas). */
+  laborMinutes: Decimal;
   /** Costo variable = materiales + merma + mano de obra + máquinas. */
   variable: Decimal;
   total: Decimal;
@@ -103,7 +109,11 @@ export function computeProductCost(input: ProductCostInput): ProductCostBreakdow
   const waste = batchWaste.div(batchYield);
   const laborUnit = batchLabor.div(batchYield);
   const machinesUnit = batchMachines.div(batchYield);
-  const fixed = D(input.fixedCostPerUnit ?? ZERO);
+  const laborMinutes = sum((input.labor ?? []).map((l) => l.minutes)).div(batchYield);
+  const fixed =
+    input.fixedCostPerMinute !== undefined
+      ? D(input.fixedCostPerMinute).times(laborMinutes)
+      : D(input.fixedCostPerUnit ?? ZERO).times(D(input.fixedWeight ?? 1));
   const variable = batchVariable.div(batchYield);
 
   return {
@@ -113,6 +123,7 @@ export function computeProductCost(input: ProductCostInput): ProductCostBreakdow
     ownLabor: batchOwnLabor.div(batchYield),
     machines: machinesUnit,
     fixed,
+    laborMinutes,
     variable,
     total: variable.plus(fixed),
     batchVariable,

@@ -3,6 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import {
   computeProductCost,
+  fixedCostPerMinute,
   fixedCostPerUnit,
   summarizeProductPricing,
   totalMonthlyFixedCosts,
@@ -38,6 +39,7 @@ export async function getCostingContext() {
     business,
     monthlyFixed,
     fixedPerUnit: fixedCostPerUnit(monthlyFixed, business.monthlyUnitsEstimate),
+    fixedPerMinute: fixedCostPerMinute(monthlyFixed, business.monthlyHoursEstimate),
     machineCount: machines,
     channels,
     tiers,
@@ -45,6 +47,14 @@ export async function getCostingContext() {
 }
 
 export type CostingContext = Awaited<ReturnType<typeof getCostingContext>>;
+
+/** Fijos según el método elegido: por tamaño (unidades normales) o por minutos de trabajo. */
+function fixedInput(product: ProductWithRecipe, ctx: CostingContext) {
+  if (!product.includeFixedCosts) return { fixedCostPerUnit: 0 };
+  return ctx.business.fixedAllocation === "TIME"
+    ? { fixedCostPerMinute: ctx.fixedPerMinute }
+    : { fixedCostPerUnit: ctx.fixedPerUnit, fixedWeight: product.fixedWeight };
+}
 
 export function costProduct(product: ProductWithRecipe, ctx: CostingContext): ProductCostBreakdown {
   return computeProductCost({
@@ -72,7 +82,7 @@ export function costProduct(product: ProductWithRecipe, ctx: CostingContext): Pr
     })),
     batchYield: product.batchYield,
     wastePercent: product.wastePercent,
-    fixedCostPerUnit: product.includeFixedCosts ? ctx.fixedPerUnit : 0,
+    ...fixedInput(product, ctx),
   });
 }
 

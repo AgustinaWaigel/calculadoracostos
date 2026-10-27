@@ -6,10 +6,10 @@ import { Money } from "@/components/shared/money";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { FixedCostDialog } from "@/components/fixed-costs/fixed-cost-dialog";
 import { MachineDialog } from "@/components/fixed-costs/machine-dialog";
-import { FixedCostToggle, MonthlyUnitsInput } from "@/components/fixed-costs/fixed-cost-row-controls";
+import { FixedAllocationForm, FixedCostToggle } from "@/components/fixed-costs/fixed-cost-row-controls";
 import { deleteFixedCost, deleteMachine } from "@/actions/fixed-costs";
 import { db } from "@/lib/db";
-import { fixedCostPerUnit, machineAmortizationRate, totalMonthlyFixedCosts } from "@/lib/calc/fixed-costs";
+import { machineAmortizationRate, totalMonthlyFixedCosts } from "@/lib/calc/fixed-costs";
 import { FIXED_COST_LABELS } from "@/lib/schemas";
 import { formatNumber } from "@/lib/money";
 import { getBusiness } from "@/server/costing";
@@ -23,7 +23,6 @@ export default async function CostosFijosPage() {
     getBusiness(),
   ]);
   const total = totalMonthlyFixedCosts(costs);
-  const perUnit = fixedCostPerUnit(total, business.monthlyUnitsEstimate);
 
   return (
     <>
@@ -41,28 +40,19 @@ export default async function CostosFijosPage() {
       />
 
       <Card className="mb-4">
-        <CardContent className="grid gap-4 sm:grid-cols-3 sm:items-center">
+        <CardContent className="grid gap-4 sm:grid-cols-3 sm:items-start">
           <div>
             <p className="text-xs text-muted-foreground">Total por mes</p>
             <p className="text-2xl font-semibold">
               <Money value={total.toString()} />
             </p>
           </div>
-          <div>
-            <p className="flex items-center gap-1 text-xs text-muted-foreground">
-              Producción estimada
-              <InfoTooltip>
-                Cuántas unidades (de todos tus productos) hacés en un mes normal. Con esto repartimos los fijos.
-              </InfoTooltip>
-            </p>
-            <MonthlyUnitsInput value={business.monthlyUnitsEstimate} />
-          </div>
-          <div className="rounded-lg bg-primary/5 p-3">
-            <p className="text-xs text-muted-foreground">Le toca a cada unidad</p>
-            <p className="text-2xl font-semibold text-primary">
-              <Money value={perUnit.toString()} />
-            </p>
-          </div>
+          <FixedAllocationForm
+            total={total.toString()}
+            method={business.fixedAllocation}
+            units={business.monthlyUnitsEstimate}
+            hours={business.monthlyHoursEstimate}
+          />
         </CardContent>
       </Card>
 

@@ -13,6 +13,7 @@ export interface LiveValues {
   batchYield?: unknown;
   wastePercent?: unknown;
   includeFixedCosts?: boolean;
+  fixedWeight?: unknown;
   marginPercent?: unknown;
   pricingMode?: PricingMode | null;
   supplies?: { supplyId?: string; quantity?: unknown }[];
@@ -57,7 +58,7 @@ export function computeLive(values: LiveValues, options: EditorOptions): LiveRes
       }),
       batchYield: num(values.batchYield)?.gt(0) ? num(values.batchYield)! : 1,
       wastePercent: num(values.wastePercent) ?? 0,
-      fixedCostPerUnit: values.includeFixedCosts === false ? 0 : options.fixedPerUnit,
+      ...fixedInput(values, options),
     });
 
     let summary: ProductPricingSummary | null = null;
@@ -84,4 +85,12 @@ export function computeLive(values: LiveValues, options: EditorOptions): LiveRes
   } catch (e) {
     return { cost: null, summary: null, slices: [], error: e instanceof Error ? e.message : "Error de cálculo" };
   }
+}
+
+/** Igual que en el servidor: fijos por tamaño (unidades normales) o por minutos de trabajo. */
+function fixedInput(values: LiveValues, options: EditorOptions) {
+  if (values.includeFixedCosts === false) return { fixedCostPerUnit: 0 };
+  if (options.fixedAllocation === "TIME") return { fixedCostPerMinute: options.fixedPerMinute };
+  const weight = num(values.fixedWeight);
+  return { fixedCostPerUnit: options.fixedPerUnit, fixedWeight: weight?.gt(0) ? weight : 1 };
 }

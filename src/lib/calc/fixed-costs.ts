@@ -9,11 +9,20 @@ export function totalMonthlyFixedCosts(costs: FixedCostInput[]): Decimal {
   return sum(costs.filter((c) => c.active !== false).map((c) => c.monthlyAmount));
 }
 
-/** Prorrateo: total de fijos del mes ÷ unidades que estimás producir en el mes. */
+export type FixedAllocation = "SIZE" | "TIME";
+
+/** Prorrateo: total de fijos del mes ÷ unidades (normales) que estimás producir en el mes. */
 export function fixedCostPerUnit(totalMonthly: DecimalInput, monthlyUnits: DecimalInput): Decimal {
   const units = D(monthlyUnits);
   if (units.lte(0)) return ZERO;
   return D(totalMonthly).div(units);
+}
+
+/** Prorrateo por tiempo: total de fijos del mes ÷ minutos que trabajás en el mes. */
+export function fixedCostPerMinute(totalMonthly: DecimalInput, monthlyHours: DecimalInput): Decimal {
+  const hours = D(monthlyHours);
+  if (hours.lte(0)) return ZERO;
+  return D(totalMonthly).div(hours.times(60));
 }
 
 export type LifeUnit = "UNITS" | "HOURS";

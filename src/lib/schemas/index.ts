@@ -142,6 +142,7 @@ export const productSchema = z
     batchYield: decimalField({ min: 0, gt: true, label: "El rinde por lote" }),
     wastePercent: percentField("La merma"),
     includeFixedCosts: z.boolean().default(true),
+    fixedWeight: decimalField({ min: 0, gt: true, label: "El tamaño" }),
     marginPercent: optionalDecimalField({ min: 0, max: 10000, label: "El margen" }),
     pricingMode: z.enum(pricingModes).nullable().optional(),
     supplies: z

@@ -88,3 +88,28 @@ describe("mano de obra propia", () => {
     expect(cost.total.toNumber()).toBe(2500);
   });
 });
+
+describe("reparto de costos fijos", () => {
+  it("por tamaño: multiplica lo de una unidad normal", () => {
+    const grande = computeProductCost({ supplies: [], fixedCostPerUnit: 500, fixedWeight: 3 });
+    const chico = computeProductCost({ supplies: [], fixedCostPerUnit: 500, fixedWeight: "0.5" });
+    expect(grande.fixed.toNumber()).toBe(1500);
+    expect(chico.fixed.toNumber()).toBe(250);
+  });
+
+  it("por tiempo: $/minuto × minutos de trabajo por unidad (ignora el tamaño)", () => {
+    const cost = computeProductCost({
+      supplies: [],
+      labor: [
+        { hourlyRate: 6000, minutes: 40 },
+        { hourlyRate: 4000, minutes: 20 },
+      ],
+      batchYield: 2,
+      fixedCostPerUnit: 500,
+      fixedWeight: 3,
+      fixedCostPerMinute: 10,
+    });
+    expect(cost.laborMinutes.toNumber()).toBe(30);
+    expect(cost.fixed.toNumber()).toBe(300);
+  });
+});

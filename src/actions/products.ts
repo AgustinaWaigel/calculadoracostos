@@ -68,6 +68,7 @@ export async function duplicateProduct(id: string): Promise<ActionResult<{ id: s
       batchYield: p.batchYield,
       wastePercent: p.wastePercent,
       includeFixedCosts: p.includeFixedCosts,
+      fixedWeight: p.fixedWeight,
       marginPercent: p.marginPercent,
       pricingMode: p.pricingMode,
       duplicatedFromId: p.id,

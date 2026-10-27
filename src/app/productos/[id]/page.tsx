@@ -26,6 +26,7 @@ export default async function ProductoPage({ params }: { params: Promise<{ id: s
         batchYield: product.batchYield.toString(),
         wastePercent: product.wastePercent.toString(),
         includeFixedCosts: product.includeFixedCosts,
+        fixedWeight: product.fixedWeight.toString(),
         marginPercent: product.marginPercent?.toString() ?? null,
         pricingMode: product.pricingMode,
         supplies: product.supplies.map((s) => ({ supplyId: s.supplyId, quantity: s.quantity.toString() })),

@@ -13,28 +13,36 @@ datasource db {
 // ───────── Emprendimiento y configuración ─────────
 
 model Business {
-  id                   String       @id @default("singleton")
+  id                   String          @id @default("singleton")
   name                 String
   logoUrl              String?
   phone                String?
   email                String?
   instagram            String?
   address              String?
-  taxCondition         TaxCondition @default(MONOTRIBUTO)
-  ivaPercent           Decimal      @default(21)
-  monthlyUnitsEstimate Int          @default(100)
-  defaultMarginPercent Decimal      @default(40)
-  pricingMode          PricingMode  @default(MARGIN)
-  roundTo              Decimal      @default(10)
-  quoteValidityDays    Int          @default(7)
-  quoteNumberSeq       Int          @default(0)
-  updatedAt            DateTime     @updatedAt
+  taxCondition         TaxCondition    @default(MONOTRIBUTO)
+  ivaPercent           Decimal         @default(21)
+  monthlyUnitsEstimate Int             @default(100)
+  /// Cómo se reparten los fijos: por tamaño (unidades normales) o por minutos de trabajo.
+  fixedAllocation      FixedAllocation @default(SIZE)
+  monthlyHoursEstimate Int             @default(80)
+  defaultMarginPercent Decimal         @default(40)
+  pricingMode          PricingMode     @default(MARGIN)
+  roundTo              Decimal         @default(10)
+  quoteValidityDays    Int             @default(7)
+  quoteNumberSeq       Int             @default(0)
+  updatedAt            DateTime        @updatedAt
 }
 
 enum TaxCondition {
   MONOTRIBUTO
   RESPONSABLE_INSCRIPTO
   EXENTO
+}
+
+enum FixedAllocation {
+  SIZE
+  TIME
 }
 
 enum PricingMode {
@@ -158,6 +166,8 @@ model Product {
   batchYield        Decimal          @default(1)
   wastePercent      Decimal          @default(0)
   includeFixedCosts Boolean          @default(true)
+  /// Cuántas "unidades normales" equivale este producto al repartir los fijos (chico 0,5 · grande 3).
+  fixedWeight       Decimal          @default(1)
   marginPercent     Decimal?
   pricingMode       PricingMode?
   duplicatedFromId  String?

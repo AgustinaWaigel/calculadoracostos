@@ -33,18 +33,24 @@ export async function deleteFixedCost(id: string): Promise<ActionResult> {
   return ok(undefined, "Costo fijo eliminado");
 }
 
-const unitsSchema = z.coerce.number().int("Tiene que ser un número entero").min(1, "Tiene que ser al menos 1");
+const countField = z.coerce.number().int("Tiene que ser un número entero").min(1, "Tiene que ser al menos 1");
+const allocationSchema = z.object({
+  fixedAllocation: z.enum(["SIZE", "TIME"]),
+  monthlyUnitsEstimate: countField,
+  monthlyHoursEstimate: countField.max(744, "Un mes tiene 744 horas como mucho"),
+});
 
-export async function updateMonthlyUnits(value: unknown): Promise<ActionResult> {
-  const parsed = unitsSchema.safeParse(value);
+/** Cómo se reparten los fijos: por tamaño (unidades normales por mes) o por tiempo (horas por mes). */
+export async function updateFixedAllocation(input: unknown): Promise<ActionResult> {
+  const parsed = allocationSchema.safeParse(input);
   if (!parsed.success) return zodFail(parsed.error);
   await db.business.upsert({
     where: { id: "singleton" },
-    create: { id: "singleton", name: "Mi Emprendimiento", monthlyUnitsEstimate: parsed.data },
-    update: { monthlyUnitsEstimate: parsed.data },
+    create: { id: "singleton", name: "Mi Emprendimiento", ...parsed.data },
+    update: parsed.data,
   });
   revalidateFixed();
-  return ok(undefined, "Producción mensual actualizada");
+  return ok(undefined, "Reparto de fijos actualizado");
 }
 
 export async function saveMachine(input: unknown): Promise<ActionResult<{ id: string }>> {

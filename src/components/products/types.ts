@@ -1,5 +1,6 @@
 import type { PricingMode, TaxCondition } from "@/lib/calc/pricing";
 import type { InkChannel } from "@/lib/calc/print";
+import type { FixedAllocation } from "@/lib/calc/fixed-costs";
 
 /** Datos planos (strings) que el editor de productos necesita para calcular en vivo. */
 export interface EditorOptions {
@@ -15,6 +16,8 @@ export interface EditorOptions {
   profiles: { id: string; name: string; hourlyRate: string; isOwn: boolean; color: string | null }[];
   machines: { id: string; name: string; price: string; usefulLife: string; lifeUnit: "UNITS" | "HOURS" }[];
   fixedPerUnit: string;
+  fixedPerMinute: string;
+  fixedAllocation: FixedAllocation;
   monthlyFixed: string;
   monthlyUnitsEstimate: number;
   settings: {
@@ -50,6 +53,7 @@ export interface ProductFormValues {
   batchYield: string;
   wastePercent: string;
   includeFixedCosts: boolean;
+  fixedWeight: string;
   marginPercent: string | null;
   pricingMode: PricingMode | null;
   supplies: { supplyId: string; quantity: string }[];

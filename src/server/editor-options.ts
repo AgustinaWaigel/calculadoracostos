@@ -9,6 +9,8 @@ export function contextToPlain(ctx: CostingContext): Omit<EditorOptions, "suppli
   const b = ctx.business;
   return {
     fixedPerUnit: ctx.fixedPerUnit.toString(),
+    fixedPerMinute: ctx.fixedPerMinute.toString(),
+    fixedAllocation: b.fixedAllocation,
     monthlyFixed: ctx.monthlyFixed.toString(),
     monthlyUnitsEstimate: b.monthlyUnitsEstimate,
     settings: {

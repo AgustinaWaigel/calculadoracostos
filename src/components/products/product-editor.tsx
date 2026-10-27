@@ -24,8 +24,16 @@ import { QuickSupplyDialog, type CreatedSupply } from "@/components/supplies/qui
 import { QuickPrintDialog } from "@/components/print/quick-print-dialog";
 import { saveProduct } from "@/actions/products";
 import { productSchema, type ProductData, type ProductInput } from "@/lib/schemas";
-import { formatMoney, formatPercent, toInputString } from "@/lib/money";
+import { formatMoney, formatNumber, formatPercent, toInputString } from "@/lib/money";
 import type { EditorOptions, ProductFormValues } from "./types";
+
+/** Atajos de "tamaño para los fijos": cuántas unidades normales equivale el producto. */
+const SIZES = [
+  { value: "0,5", label: "Chico" },
+  { value: "1", label: "Normal" },
+  { value: "2", label: "Grande" },
+  { value: "3", label: "Muy grande" },
+];
 
 const KIND_FILTERS = [
   { value: "MATERIAL", label: "Materiales" },
@@ -42,6 +50,7 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
       batchYield: toInputString(defaults?.batchYield ?? "1"),
       wastePercent: toInputString(defaults?.wastePercent ?? "0"),
       includeFixedCosts: defaults?.includeFixedCosts ?? true,
+      fixedWeight: toInputString(defaults?.fixedWeight ?? "1"),
       marginPercent: toInputString(defaults?.marginPercent ?? null),
       pricingMode: defaults?.pricingMode ?? null,
       supplies: defaults?.supplies.map((s) => ({ ...s, quantity: toInputString(s.quantity) })) ?? [
@@ -229,18 +238,80 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
             >
               <Input id="p-waste" inputMode="decimal" {...register("wastePercent")} />
             </Field>
-            <Field label="Costos fijos">
+            <div className="grid gap-2 sm:col-span-3">
               <Controller
                 control={control}
                 name="includeFixedCosts"
                 render={({ field }) => (
-                  <label className="flex h-8 items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm font-medium">
                     <Switch checked={!!field.value} onCheckedChange={field.onChange} />
-                    Incluir <Money value={options.fixedPerUnit} className="font-medium" />/u
+                    Incluir costos fijos
+                    {values.includeFixedCosts !== false && live.cost && (
+                      <span className="font-normal text-muted-foreground">
+                        · <Money value={live.cost.fixed.toString()} />
+                        /u
+                      </span>
+                    )}
                   </label>
                 )}
               />
-            </Field>
+              {values.includeFixedCosts !== false &&
+                (options.fixedAllocation === "TIME" ? (
+                  <p className="text-xs text-muted-foreground">
+                    Se reparten por tiempo:{" "}
+                    {live.cost ? formatNumber(live.cost.laborMinutes, 1) : 0} min de trabajo por unidad ×{" "}
+                    <Money value={options.fixedPerMinute} />
+                    /min.{" "}
+                    <Link href="/costos-fijos" className="text-primary underline">
+                      Cambiar método
+                    </Link>
+                  </p>
+                ) : (
+                  <Field
+                    label={
+                      <span className="flex items-center gap-1">
+                        Tamaño para los fijos
+                        <InfoTooltip>
+                          Cuántas unidades normales equivale este producto. Uno grande ocupa más lugar, luz y tiempo
+                          de taller que uno chico, así que se lleva más parte de los fijos.
+                        </InfoTooltip>
+                      </span>
+                    }
+                    htmlFor="p-weight"
+                    error={errors.fixedWeight?.message}
+                    hint={
+                      <>
+                        <Money value={options.fixedPerUnit} /> por unidad normal ×{" "}
+                        {String(values.fixedWeight || "1")}.{" "}
+                        <Link href="/costos-fijos" className="text-primary underline">
+                          Cambiar método
+                        </Link>
+                      </>
+                    }
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {SIZES.map((s) => (
+                        <Button
+                          key={s.value}
+                          type="button"
+                          size="sm"
+                          variant={String(values.fixedWeight ?? "").replace(".", ",") === s.value ? "default" : "outline"}
+                          onClick={() => form.setValue("fixedWeight", s.value, { shouldValidate: true })}
+                        >
+                          {s.label} ×{s.value}
+                        </Button>
+                      ))}
+                      <Input
+                        id="p-weight"
+                        inputMode="decimal"
+                        aria-label="Tamaño personalizado"
+                        className="w-20"
+                        {...register("fixedWeight")}
+                      />
+                    </div>
+                  </Field>
+                ))}
+            </div>
           </CardContent>
         </Card>
 
