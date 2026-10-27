@@ -1,13 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { PlusIcon, ShapesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
 import { EmptyState, PageHeader } from "@/components/shared/ui-bits";
-import { Money } from "@/components/shared/money";
-import { ProductRowActions } from "@/components/products/product-row-actions";
+import { ProductList } from "@/components/products/product-list";
 import { getAllProductsWithPricing } from "@/server/costing";
-import { formatPercent } from "@/lib/money";
 import { marginOf } from "@/lib/calc/pricing";
 
 export const metadata = { title: "Productos" };
@@ -36,38 +33,26 @@ export default async function ProductosPage() {
           action={{ label: "Armar el primero", href: "/productos/nuevo" }}
         />
       ) : (
-        <Card className="gap-0 overflow-hidden py-0">
-          <ul className="divide-y">
-            {items.map(({ product, cost, pricing, pricingError }) => {
+        <Suspense>
+          <ProductList
+            rows={items.map(({ product, cost, pricing, pricingError }) => {
               const ref = pricing?.reference;
-              const margin = ref ? marginOf(ref.netOfVat, cost.total) : null;
-              return (
-                <li key={product.id} className="flex items-center gap-2 pr-2 transition-colors hover:bg-muted/50">
-                  <Link href={`/productos/${product.id}`} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-medium">{product.name}</span>
-                        {product.category && <Badge variant="secondary">{product.category}</Badge>}
-                      </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        Costo <Money value={cost.total.toString()} />
-                        {margin && <> · margen {formatPercent(margin, 0)}</>}
-                        {pricingError && <span className="text-destructive"> · {pricingError}</span>}
-                      </p>
-                    </div>
-                    {ref && (
-                      <div className="text-right">
-                        <Money value={ref.price.toString()} className="font-semibold" />
-                        <p className="text-xs text-muted-foreground">{ref.channelName}</p>
-                      </div>
-                    )}
-                  </Link>
-                  <ProductRowActions id={product.id} name={product.name} />
-                </li>
-              );
+              return {
+                id: product.id,
+                name: product.name,
+                category: product.category,
+                cost: cost.total.toString(),
+                price: ref?.price.toString() ?? null,
+                channelName: ref?.channelName ?? null,
+                margin: ref ? marginOf(ref.netOfVat, cost.total).toString() : null,
+                takeHome: ref && pricing ? ref.netProfit.plus(pricing.ownLabor).toString() : null,
+                error: pricingError,
+                isLoss: ref?.isLoss ?? false,
+                updatedAt: product.updatedAt.toISOString(),
+              };
             })}
-          </ul>
-        </Card>
+          />
+        </Suspense>
       )}
     </>
   );

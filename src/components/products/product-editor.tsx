@@ -25,6 +25,7 @@ import { QuickPrintDialog } from "@/components/print/quick-print-dialog";
 import { saveProduct } from "@/actions/products";
 import { productSchema, type ProductData, type ProductInput } from "@/lib/schemas";
 import { formatMoney, formatNumber, formatPercent, toInputString } from "@/lib/money";
+import { cn } from "@/lib/utils";
 import type { EditorOptions, ProductFormValues } from "./types";
 
 /** Atajos de "tamaño para los fijos": cuántas unidades normales equivale el producto. */
@@ -199,6 +200,26 @@ export function ProductEditor({ options, defaults }: { options: EditorOptions; d
                   <option key={c} value={c} />
                 ))}
               </datalist>
+              {options.categories.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1" aria-label="Categorías que ya usaste">
+                  {options.categories.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      aria-pressed={values.category === c}
+                      onClick={() => form.setValue("category", values.category === c ? "" : c, { shouldDirty: true })}
+                      className={cn(
+                        "rounded-full border px-2.5 py-0.5 text-xs transition-colors duration-150",
+                        values.category === c
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
             </Field>
             <Field label="Descripción" htmlFor="p-desc" className="sm:col-span-2">
               <Textarea id="p-desc" rows={2} placeholder="Opcional" {...register("description")} />
