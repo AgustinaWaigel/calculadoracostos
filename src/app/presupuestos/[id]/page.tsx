@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/shared/ui-bits";
 import { QuoteEditor } from "@/components/quotes/quote-editor";
 import { QuoteActions } from "@/components/quotes/quote-actions";
-import { getQuoteOptions } from "@/server/quote-options";
+import { getQuoteOptions, quoteTiersFromJson } from "@/server/quote-options";
 import { db } from "@/lib/db";
 import { buildQuoteMessage, formatQuoteNumber } from "@/lib/quote-text";
 import { whatsappUrl } from "@/lib/whatsapp";
@@ -48,6 +48,7 @@ export default async function PresupuestoPage({ params }: { params: Promise<{ id
           validUntil: quote.validUntil.toISOString().slice(0, 10),
           status: quote.status,
           discountPercent: quote.discountPercent.toString(),
+          volumeTiers: quoteTiersFromJson(quote.volumeTiers),
           items: quote.items.map((i) => ({
             productId: i.productId,
             description: i.description,

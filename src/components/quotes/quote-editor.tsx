@@ -17,12 +17,24 @@ import { useAction } from "@/components/shared/use-action";
 import { saveQuote } from "@/actions/quotes";
 import { quoteSchema, type QuoteData, type QuoteInput } from "@/lib/schemas";
 import { quoteBreakdown, volumePrice, type VolumePrice } from "@/lib/calc/quote";
+import type { VolumeTierInput } from "@/lib/calc/pricing";
 import { D, formatMoney, formatPercent, parseMoneyInput, toInputString } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { QuoteFormValues, QuoteProductOption } from "./types";
 
 const CUSTOM = "__custom__";
 const EXTRA_CHIPS = [0, 5, 10, 15];
+
+/** Tramos del form → tramos para calcular (los que están a medio escribir no cuentan). */
+function parseTiers(rows: { minQuantity?: unknown; discountPercent?: unknown }[] | undefined) {
+  return (rows ?? []).flatMap((t) => {
+    const minQuantity = Number(t?.minQuantity);
+    const discountPercent = parseMoneyInput(String(t?.discountPercent ?? ""));
+    return Number.isInteger(minQuantity) && minQuantity >= 1 && discountPercent
+      ? [{ minQuantity, discountPercent }]
+      : [];
+  });
+}
 
 export function QuoteEditor({
   products,
@@ -42,6 +54,7 @@ export function QuoteEditor({
       clientEmail: defaults.clientEmail ?? "",
       notes: defaults.notes ?? "",
       discountPercent: toInputString(defaults.discountPercent),
+      volumeTiers: defaults.volumeTiers.map((t) => ({ ...t, discountPercent: toInputString(t.discountPercent) })),
       items: defaults.items.map((i) => ({
         ...i,
         quantity: toInputString(i.quantity),
@@ -52,22 +65,29 @@ export function QuoteEditor({
   const { control, register, formState, getValues, setValue, setError } = form;
   const errors = formState.errors;
   const items = useFieldArray({ control, name: "items" });
+  const tierRows = useFieldArray({ control, name: "volumeTiers" });
+  const [editingTiers, setEditingTiers] = useState(false);
+  const showTierEditor = editingTiers || !!errors.volumeTiers;
   const { pending, run } = useAction<QuoteInput>(setError);
   const productById = new Map(products.map((p) => [p.id, p]));
-  const activeTiers = tiers.filter((t) => D(t.discountPercent).gt(0)).sort((a, b) => a.minQuantity - b.minQuantity);
 
   const qtyOf = (v: unknown) => parseMoneyInput(String(v ?? ""))?.toNumber() ?? 0;
   /** Precio sugerido de un producto para esa cantidad (con el descuento por cantidad que toque). */
-  const suggest = (productId: string | null | undefined, quantity: unknown): VolumePrice | null => {
+  const suggest = (
+    productId: string | null | undefined,
+    quantity: unknown,
+    withTiers: VolumeTierInput[],
+  ): VolumePrice | null => {
     const p = productId ? productById.get(productId) : undefined;
-    return p ? volumePrice(p.price, Math.max(qtyOf(quantity), 1), tiers) : null;
+    return p ? volumePrice(p.price, Math.max(qtyOf(quantity), 1), withTiers) : null;
   };
 
   // Ítems con el precio escrito a mano: no se lo pisamos al cambiar la cantidad.
   const [manual, setManual] = useState<Set<string>>(() => {
     const set = new Set<string>();
+    const initialTiers = parseTiers(defaults.volumeTiers);
     defaults.items.forEach((item, i) => {
-      const s = suggest(item.productId, item.quantity);
+      const s = suggest(item.productId, item.quantity, initialTiers);
       const id = items.fields[i]?.id;
       if (id && s && !s.unitPrice.eq(D(item.unitPrice))) set.add(id);
     });
@@ -82,11 +102,13 @@ export function QuoteEditor({
     });
 
   const watched = useWatch({ control });
+  const quoteTiers = parseTiers(watched.volumeTiers);
+  const activeTiers = quoteTiers.filter((t) => t.discountPercent.gt(0)).sort((a, b) => a.minQuantity - b.minQuantity);
   const lines = (watched.items ?? []).map((item, i) => {
     const id = items.fields[i]?.id ?? "";
     const quantity = parseMoneyInput(String(item?.quantity ?? "")) ?? D(0);
     const unitPrice = parseMoneyInput(String(item?.unitPrice ?? "")) ?? D(0);
-    const suggested = suggest(item?.productId, item?.quantity);
+    const suggested = suggest(item?.productId, item?.quantity, quoteTiers);
     const isManual = manual.has(id);
     return { id, quantity, unitPrice, suggested, isManual };
   });
@@ -101,8 +123,20 @@ export function QuoteEditor({
   );
 
   function setSuggestedPrice(index: number, productId: string | null | undefined, quantity: unknown) {
-    const s = suggest(productId, quantity);
+    const s = suggest(productId, quantity, parseTiers(getValues("volumeTiers")));
     if (s) setValue(`items.${index}.unitPrice`, toInputString(s.unitPrice), { shouldValidate: true });
+  }
+
+  /** Al tocar los descuentos, los ítems con precio sugerido se recalculan (los escritos a mano no). */
+  function repriceItems() {
+    items.fields.forEach((f, i) => {
+      if (!manual.has(f.id)) setSuggestedPrice(i, getValues(`items.${i}.productId`), getValues(`items.${i}.quantity`));
+    });
+  }
+
+  function replaceTiers(next: { minQuantity: string; discountPercent: string }[]) {
+    tierRows.replace(next);
+    repriceItems();
   }
 
   function onProductChange(index: number, productId: string) {
@@ -151,21 +185,116 @@ export function QuoteEditor({
         <Card>
           <CardHeader>
             <CardTitle>Qué le cotizás</CardTitle>
-            {activeTiers.length > 0 && (
-              <CardDescription className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                Descuento por cantidad (se aplica solo al precio):
-                {activeTiers.map((t) => (
-                  <span key={t.minQuantity} className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
-                    {t.minQuantity}+ → −{formatPercent(t.discountPercent, 0)}
-                  </span>
-                ))}
-                <Link href="/ajustes" className="text-xs text-primary underline">
-                  cambiar
-                </Link>
-              </CardDescription>
-            )}
+            <CardDescription className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+              {activeTiers.length > 0 ? (
+                <>
+                  Descuento por cantidad en este presupuesto:
+                  {activeTiers.map((t) => (
+                    <span key={t.minQuantity} className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">
+                      {t.minQuantity}+ → −{formatPercent(t.discountPercent, 0)}
+                    </span>
+                  ))}
+                </>
+              ) : (
+                "Sin descuento por cantidad en este presupuesto."
+              )}
+              {!showTierEditor && (
+                <button
+                  type="button"
+                  className="text-xs text-primary underline-offset-2 hover:underline"
+                  onClick={() => setEditingTiers(true)}
+                >
+                  {activeTiers.length > 0 ? "cambiar" : "agregar"}
+                </button>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
+            {showTierEditor && (
+              <div className="grid gap-2 rounded-xl border border-dashed bg-muted/30 p-3">
+                <p className="text-xs text-muted-foreground">
+                  Solo cambia este presupuesto. Los de siempre están en{" "}
+                  <Link href="/ajustes" className="text-primary underline">
+                    Ajustes
+                  </Link>
+                  .
+                </p>
+                {tierRows.fields.length > 0 && (
+                  <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs text-muted-foreground">
+                    <span>Desde (unidades)</span>
+                    <span>Descuento (%)</span>
+                    <span className="w-7" />
+                  </div>
+                )}
+                {tierRows.fields.map((t, i) => (
+                  <div key={t.id} className="grid gap-1">
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                      <Input
+                        type="number"
+                        min={1}
+                        aria-label="Desde"
+                        {...register(`volumeTiers.${i}.minQuantity`, { onChange: repriceItems })}
+                      />
+                      <Input
+                        inputMode="decimal"
+                        aria-label="Descuento"
+                        {...register(`volumeTiers.${i}.discountPercent`, { onChange: repriceItems })}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label="Quitar tramo"
+                        onClick={() => {
+                          tierRows.remove(i);
+                          repriceItems();
+                        }}
+                      >
+                        <Trash2Icon />
+                      </Button>
+                    </div>
+                    <FieldError
+                      message={
+                        errors.volumeTiers?.[i]?.minQuantity?.message ?? errors.volumeTiers?.[i]?.discountPercent?.message
+                      }
+                    />
+                  </div>
+                ))}
+                <FieldError message={errors.volumeTiers?.message ?? errors.volumeTiers?.root?.message} />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => tierRows.append({ minQuantity: "", discountPercent: "" })}
+                  >
+                    <PlusIcon /> Agregar tramo
+                  </Button>
+                  {tierRows.fields.length > 0 && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => replaceTiers([])}>
+                      Sin descuento
+                    </Button>
+                  )}
+                  {tiers.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        replaceTiers(
+                          tiers.map((t) => ({ minQuantity: String(t.minQuantity), discountPercent: toInputString(t.discountPercent) })),
+                        )
+                      }
+                    >
+                      Usar los de Ajustes
+                    </Button>
+                  )}
+                  <Button type="button" size="sm" className="ml-auto" onClick={() => setEditingTiers(false)}>
+                    Listo
+                  </Button>
+                </div>
+              </div>
+            )}
             {items.fields.map((f, i) => {
               const productId = watched.items?.[i]?.productId;
               const line = lines[i];

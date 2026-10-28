@@ -255,6 +255,8 @@ model Quote {
   validUntil      DateTime
   status          QuoteStatus @default(DRAFT)
   discountPercent Decimal     @default(0)
+  /// Descuentos por cantidad propios del presupuesto: [{ minQuantity, discountPercent }]. Se copian de Ajustes al crearlo.
+  volumeTiers     Json        @default("[]")
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
   items           QuoteItem[]

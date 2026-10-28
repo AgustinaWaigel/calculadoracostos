@@ -14,5 +14,7 @@ export interface QuoteFormValues {
   validUntil: string;
   status: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED";
   discountPercent: string;
+  /** Descuentos por cantidad de este presupuesto (no los de Ajustes). */
+  volumeTiers: { minQuantity: string; discountPercent: string }[];
   items: { productId: string | null; description: string; quantity: string; unitPrice: string }[];
 }

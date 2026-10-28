@@ -237,18 +237,16 @@ export const channelSchema = z.object({
 });
 export type ChannelInput = z.input<typeof channelSchema>;
 
+const volumeTierSchema = z.object({
+  minQuantity: z.coerce.number().int().min(1, "Mínimo 1 unidad"),
+  discountPercent: percentField("El descuento", 99),
+});
+const uniqueTiers = (tiers: { minQuantity: number }[]) => new Set(tiers.map((t) => t.minQuantity)).size === tiers.length;
+
 export const volumeTiersSchema = z
-  .array(
-    z.object({
-      minQuantity: z.coerce.number().int().min(1, "Mínimo 1 unidad"),
-      discountPercent: percentField("El descuento", 99),
-    }),
-  )
+  .array(volumeTierSchema)
   .min(1, "Cargá al menos un tramo")
-  .refine(
-    (tiers) => new Set(tiers.map((t) => t.minQuantity)).size === tiers.length,
-    "Hay cantidades repetidas",
-  );
+  .refine(uniqueTiers, "Hay cantidades repetidas");
 export type VolumeTiersInput = z.input<typeof volumeTiersSchema>;
 
 // ───────── Presupuestos ─────────
@@ -262,6 +260,8 @@ export const quoteSchema = z.object({
   validUntil: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Fecha inválida"),
   status: z.enum(quoteStatuses).default("DRAFT"),
   discountPercent: percentField("El descuento", 99),
+  /** Descuentos por cantidad de este presupuesto (copia de Ajustes al crearlo; vacío = sin descuento). */
+  volumeTiers: z.array(volumeTierSchema).refine(uniqueTiers, "Hay cantidades repetidas").default([]),
   items: z
     .array(
       z.object({

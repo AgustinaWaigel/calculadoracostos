@@ -28,6 +28,7 @@ export default async function NuevoPresupuestoPage({
           validUntil,
           status: "DRAFT",
           discountPercent: "0",
+          volumeTiers: tiers.map((t) => ({ minQuantity: String(t.minQuantity), discountPercent: t.discountPercent })),
           items: [
             preselected
               ? { productId: preselected.id, description: preselected.name, quantity: "1", unitPrice: preselected.price }
