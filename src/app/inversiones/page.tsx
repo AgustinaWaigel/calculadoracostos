@@ -1,22 +1,16 @@
 import Link from "next/link";
 import {
   CalendarClockIcon,
-  FileTextIcon,
-  ShoppingBagIcon,
   PencilIcon,
   PiggyBankIcon,
   PlusIcon,
+  ShoppingBagIcon,
   TrendingUpIcon,
   WalletIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  EmptyState,
-  InfoTooltip,
-  PageHeader,
-  StatCard,
-} from "@/components/shared/ui-bits";
+import { EmptyState, InfoTooltip, PageHeader, StatCard } from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { MovementDialog } from "@/components/investments/movement-dialog";
@@ -24,9 +18,9 @@ import { RecoverySimulator } from "@/components/investments/recovery-simulator";
 import { deleteInvestmentMovement } from "@/actions/investments";
 import { db } from "@/lib/db";
 import { investmentSummary } from "@/lib/calc/investment";
-import { formatQuoteNumber } from "@/lib/quote-text";
-import { D, formatPercent, roundCents, sum } from "@/lib/money";
-import { getQuoteSales, type QuoteSale } from "@/server/investments";
+import { formatPercent, roundCents } from "@/lib/money";
+import { getSales, type SaleRow } from "@/server/sales";
+import { monthKey, salesTotals } from "@/lib/calc/sales";
 
 export const metadata = { title: "Inversiones" };
 
@@ -41,26 +35,16 @@ const monthFmt = new Intl.DateTimeFormat("es-AR", {
   year: "numeric",
 });
 
-type Movement = Awaited<
-  ReturnType<typeof db.investmentMovement.findMany>
->[number];
+type Movement = Awaited<ReturnType<typeof db.investmentMovement.findMany>>[number];
 
-function MovementList({
-  movements,
-  kind,
-}: {
-  movements: Movement[];
-  kind: Movement["kind"];
-}) {
+function MovementList({ movements, kind }: { movements: Movement[]; kind: Movement["kind"] }) {
   return (
     <ul className="divide-y">
       {movements.map((m) => (
         <li key={m.id} className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{m.description}</p>
-            <p className="text-xs text-muted-foreground">
-              {dateFmt.format(m.date)}
-            </p>
+            <p className="text-xs text-muted-foreground">{dateFmt.format(m.date)}</p>
           </div>
           <Money value={m.amount.toString()} className="font-semibold" />
           <MovementDialog
@@ -73,11 +57,7 @@ function MovementList({
               date: m.date.toISOString().slice(0, 10),
             }}
             trigger={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`Editar ${m.description}`}
-              >
+              <Button variant="ghost" size="icon-sm" aria-label={`Editar ${m.description}`}>
                 <PencilIcon />
               </Button>
             }
@@ -92,47 +72,30 @@ function MovementList({
   );
 }
 
-/** Tus ventas (presupuestos aceptados): cuántas, cuánto vendiste y cuánto te dejaron. */
-function SalesCard({ sales }: { sales: QuoteSale[] }) {
-  const monthStart = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    1,
-  );
-  const totals = (list: QuoteSale[]) => {
-    const profit = sum(list.map((q) => q.profit));
-    const counted = sum(list.map((q) => q.countedRevenue));
-    return {
-      count: list.length,
-      total: sum(list.map((q) => q.total)),
-      profit,
-      margin: counted.gt(0) ? profit.div(counted).times(100) : null,
-    };
-  };
-  const all = totals(sales);
-  const month = totals(sales.filter((q) => q.acceptedAt >= monthStart));
-  const skipped = sales.reduce((n, q) => n + q.skippedItems, 0);
+/** Resumen de las ventas (el detalle está en /ventas). */
+function SalesCard({ sales }: { sales: SaleRow[] }) {
+  const all = salesTotals(sales);
+  const month = salesTotals(sales.filter((x) => monthKey(x.date) === monthKey(new Date())));
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-1.5">
           <ShoppingBagIcon className="size-4 text-muted-foreground" />
           Tus ventas
-          <InfoTooltip>
-            Salen de los presupuestos aceptados. La ganancia es lo cobrado sin
-            IVA ni comisiones, menos lo que cuesta cada producto hoy.
-          </InfoTooltip>
         </CardTitle>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/ventas">Ver ventas</Link>
+        </Button>
       </CardHeader>
       <CardContent className="grid gap-3">
         {sales.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Todavía no hay ventas. Cuando marques un{" "}
-            <Link href="/presupuestos" className="text-primary underline">
-              presupuesto
+            Todavía no hay ventas.{" "}
+            <Link href="/ventas/nueva" className="text-primary underline">
+              Registrá una
             </Link>{" "}
-            como aceptado, aparece acá.
+            o marcá un presupuesto como aceptado.
           </p>
         ) : (
           <>
@@ -149,11 +112,7 @@ function SalesCard({ sales }: { sales: QuoteSale[] }) {
                     <Money
                       value={all.profit.toString()}
                       decimals={0}
-                      className={
-                        all.profit.lt(0)
-                          ? "text-destructive"
-                          : "text-tinta dark:text-menta"
-                      }
+                      className={all.profit.lt(0) ? "text-destructive" : "text-tinta dark:text-menta"}
                     />
                   ),
                 },
@@ -172,8 +131,6 @@ function SalesCard({ sales }: { sales: QuoteSale[] }) {
               Este mes: {month.count} {month.count === 1 ? "venta" : "ventas"} ·{" "}
               <Money value={month.total.toString()} decimals={0} /> vendido ·{" "}
               <Money value={month.profit.toString()} decimals={0} /> de ganancia
-              {skipped > 0 &&
-                ` · ${skipped} ítem${skipped === 1 ? " libre" : "s libres"} sin costo no entran en la ganancia`}
             </p>
           </>
         )}
@@ -187,24 +144,20 @@ export default async function InversionesPage() {
     db.investmentMovement.findMany({
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
-    getQuoteSales(),
+    getSales(),
   ]);
   const investments = movements.filter((m) => m.kind === "INVESTMENT");
   const recoveries = movements.filter((m) => m.kind === "RECOVERY");
-  const firstInvestment = investments.length
-    ? new Date(Math.min(...investments.map((m) => m.date.getTime())))
-    : null;
-  // Los presupuestos aceptados desde la primera inversión suman solos, con su ganancia estimada.
-  const quoteRecoveries = firstInvestment
-    ? sales.filter((q) => q.acceptedAt >= firstInvestment)
-    : [];
-  const fromQuotes = sum(quoteRecoveries.map((q) => q.profit));
+  const firstInvestment = investments.length ? new Date(Math.min(...investments.map((m) => m.date.getTime()))) : null;
+  // Las ventas desde la primera inversión suman solas, con su ganancia.
+  const salesSince = firstInvestment ? sales.filter((x) => x.date >= firstInvestment) : [];
+  const fromSales = salesTotals(salesSince);
   const s = investmentSummary([
     ...movements,
-    ...quoteRecoveries.map((q) => ({
+    ...salesSince.map((x) => ({
       kind: "RECOVERY" as const,
-      amount: q.profit,
-      date: q.acceptedAt,
+      amount: x.profit,
+      date: x.date,
     })),
   ]);
   const done = investments.length > 0 && s.remaining.lte(0);
@@ -234,12 +187,7 @@ export default async function InversionesPage() {
             icon={PiggyBankIcon}
             title="Cargá lo que invertiste"
             description="Máquinas, herramientas, stock inicial, el logo, la web… todo lo que pusiste antes de vender. Después vas sumando lo que recuperás."
-            example={
-              <>
-                Ej: Plastificadora $120.000 · Primer stock de papel $45.000 ·
-                Logo $30.000
-              </>
-            }
+            example={<>Ej: Plastificadora $120.000 · Primer stock de papel $45.000 · Logo $30.000</>}
           />
           <SalesCard sales={sales} />
         </div>
@@ -265,12 +213,7 @@ export default async function InversionesPage() {
               icon={PiggyBankIcon}
               accent="halo"
               tone={done ? "good" : "warn"}
-              value={
-                <Money
-                  value={(done ? s.surplus : s.remaining).toString()}
-                  decimals={0}
-                />
-              }
+              value={<Money value={(done ? s.surplus : s.remaining).toString()} decimals={0} />}
               hint={done ? "¡Ya recuperaste todo!" : undefined}
             />
             <StatCard
@@ -278,11 +221,7 @@ export default async function InversionesPage() {
               icon={CalendarClockIcon}
               accent="cielo"
               value={
-                done
-                  ? "Listo"
-                  : s.monthsLeft != null
-                    ? `${s.monthsLeft} ${s.monthsLeft === 1 ? "mes" : "meses"}`
-                    : "—"
+                done ? "Listo" : s.monthsLeft != null ? `${s.monthsLeft} ${s.monthsLeft === 1 ? "mes" : "meses"}` : "—"
               }
               hint={
                 done
@@ -298,9 +237,7 @@ export default async function InversionesPage() {
             <CardContent className="grid gap-2">
               <div className="flex items-baseline justify-between text-sm">
                 <span className="font-medium">Recupero</span>
-                <span className="tabular-nums text-muted-foreground">
-                  {formatPercent(s.progressPercent, 0)}
-                </span>
+                <span className="tabular-nums text-muted-foreground">{formatPercent(s.progressPercent, 0)}</span>
               </div>
               <div
                 className="h-3 overflow-hidden rounded-full bg-muted"
@@ -321,12 +258,7 @@ export default async function InversionesPage() {
                   {s.monthlyPace && (
                     <>
                       {" "}
-                      · venís recuperando{" "}
-                      <Money
-                        value={s.monthlyPace.toString()}
-                        decimals={0}
-                      />{" "}
-                      por mes en promedio
+                      · venís recuperando <Money value={s.monthlyPace.toString()} decimals={0} /> por mes en promedio
                     </>
                   )}
                 </p>
@@ -359,55 +291,31 @@ export default async function InversionesPage() {
                 <CardTitle className="flex items-center gap-1.5">
                   Lo que recuperaste
                   <InfoTooltip>
-                    Los presupuestos aceptados suman solos: lo cobrado (sin IVA
-                    ni comisiones) menos lo que cuesta cada producto hoy. A mano
-                    cargá solo la ganancia de ventas que no pasaron por un
-                    presupuesto.
+                    Tus ventas suman solas (lo cobrado sin IVA ni comisiones, menos el costo). A mano cargá solo
+                    entradas que no sean ventas.
                   </InfoTooltip>
                 </CardTitle>
               </CardHeader>
-              {quoteRecoveries.length > 0 && (
-                <>
-                  <div className="flex items-baseline justify-between border-b bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground">
-                    <span>De presupuestos aceptados</span>
-                    <Money value={fromQuotes.toString()} />
+              {salesSince.length > 0 && (
+                <Link href="/ventas?mes=todo" className="flex items-center gap-3 border-b px-4 py-3 hover:bg-muted/50">
+                  <ShoppingBagIcon className="size-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium">Ganancia de tus ventas</p>
+                    <p className="text-xs text-muted-foreground">
+                      {fromSales.count} venta{fromSales.count === 1 ? "" : "s"} desde el{" "}
+                      {dateFmt.format(firstInvestment!)} · vendido{" "}
+                      <Money value={fromSales.total.toString()} decimals={0} />
+                    </p>
                   </div>
-                  <ul className="divide-y border-b">
-                    {quoteRecoveries.map((q) => (
-                      <li key={q.quoteId}>
-                        <Link
-                          href={`/presupuestos/${q.quoteId}`}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50"
-                        >
-                          <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium">
-                              {formatQuoteNumber(q.number)} · {q.clientName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {dateFmt.format(q.acceptedAt)} · vendido{" "}
-                              <Money value={q.total} decimals={0} />
-                              {q.skippedItems > 0 &&
-                                ` · ${q.skippedItems} ítem${q.skippedItems === 1 ? " libre no cuenta" : "s libres no cuentan"}`}
-                            </p>
-                          </div>
-                          <Money
-                            value={q.profit}
-                            className={
-                              D(q.profit).lt(0)
-                                ? "font-semibold text-destructive"
-                                : "font-semibold"
-                            }
-                          />
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                  <Money
+                    value={fromSales.profit.toString()}
+                    className={fromSales.profit.lt(0) ? "font-semibold text-destructive" : "font-semibold"}
+                  />
+                </Link>
               )}
               {recoveries.length > 0 && (
                 <>
-                  {quoteRecoveries.length > 0 && (
+                  {salesSince.length > 0 && (
                     <div className="border-b bg-muted/40 px-4 py-2 text-xs font-semibold text-muted-foreground">
                       Cargados a mano
                     </div>
@@ -415,10 +323,9 @@ export default async function InversionesPage() {
                   <MovementList movements={recoveries} kind="RECOVERY" />
                 </>
               )}
-              {recoveries.length === 0 && quoteRecoveries.length === 0 && (
+              {recoveries.length === 0 && salesSince.length === 0 && (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  Todavía nada. Cuando aceptes un presupuesto, su ganancia
-                  aparece acá sola.
+                  Todavía nada. Cuando registres una venta, su ganancia aparece acá sola.
                 </p>
               )}
               <div className="border-t p-3">
@@ -441,11 +348,7 @@ export default async function InversionesPage() {
                 <CardContent>
                   <RecoverySimulator
                     remaining={s.remaining.toString()}
-                    suggested={
-                      s.monthlyPace
-                        ? roundCents(s.monthlyPace).toString()
-                        : null
-                    }
+                    suggested={s.monthlyPace ? roundCents(s.monthlyPace).toString() : null}
                   />
                 </CardContent>
               </Card>

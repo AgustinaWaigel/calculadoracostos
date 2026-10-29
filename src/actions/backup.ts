@@ -32,6 +32,8 @@ const backupSchema = z.object({
     // Opcional: los backups anteriores a la calculadora de impresión no la traen.
     printInks: rows.default([]),
     investmentMovements: rows.default([]),
+    sales: rows.default([]),
+    saleItems: rows.default([]),
   }),
 });
 
@@ -52,6 +54,8 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
   const as = (r: Record<string, unknown>[]) => r as any;
   try {
     await db.$transaction([
+      db.saleItem.deleteMany(),
+      db.sale.deleteMany(),
       db.quoteItem.deleteMany(),
       db.quote.deleteMany(),
       db.productSupply.deleteMany(),
@@ -86,6 +90,8 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
       db.quoteItem.createMany({ data: as(d.quoteItems) }),
       db.printInk.createMany({ data: as(d.printInks) }),
       db.investmentMovement.createMany({ data: as(d.investmentMovements) }),
+      db.sale.createMany({ data: as(d.sales) }),
+      db.saleItem.createMany({ data: as(d.saleItems) }),
     ]);
   } catch (e) {
     return fail(`No se pudo restaurar: ${errorMessage(e).slice(0, 200)}`);
