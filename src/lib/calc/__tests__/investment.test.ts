@@ -103,6 +103,7 @@ describe("ganancia de un presupuesto aceptado", () => {
       channel: direct,
     });
     expect(r.profit.toString()).toBe("600");
+    expect(r.countedRevenue.toString()).toBe("1000");
     expect(r.skippedItems).toBe(1);
   });
 });

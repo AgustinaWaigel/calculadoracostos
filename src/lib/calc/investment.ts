@@ -89,19 +89,28 @@ export interface QuoteProfitInput {
  * comisiones) menos el costo de cada producto. El cargo fijo y el envío del canal se cuentan una vez
  * por presupuesto. Los ítems libres no se cuentan porque no sabemos cuánto costaron.
  */
-export function quoteProfit(input: QuoteProfitInput): { profit: Decimal; skippedItems: number } {
+export function quoteProfit(input: QuoteProfitInput): {
+  profit: Decimal;
+  /** Lo cobrado por los ítems que sí entraron en la cuenta (para sacar el margen). */
+  countedRevenue: Decimal;
+  skippedItems: number;
+} {
   const keep = D(1).minus(pct(input.discountPercent));
   const vat = D(input.vatRate).plus(1);
   const feeRate = pct(input.channel.commissionPercent ?? 0)
     .plus(pct(input.channel.paymentFeePercent ?? 0))
     .plus(pct(input.channel.installmentsPercent ?? 0));
   const known = input.items.filter((i) => i.unitCost != null);
-  if (known.length === 0) return { profit: ZERO, skippedItems: input.items.length };
+  if (known.length === 0) return { profit: ZERO, countedRevenue: ZERO, skippedItems: input.items.length };
 
-  const lines = known.map((i) => {
-    const charged = D(i.unitPrice).times(D(i.quantity)).times(keep);
-    return charged.div(vat).minus(charged.times(feeRate)).minus(D(i.unitCost!).times(D(i.quantity)));
-  });
+  const charged = known.map((i) => D(i.unitPrice).times(D(i.quantity)).times(keep));
+  const lines = known.map((i, n) =>
+    charged[n].div(vat).minus(charged[n].times(feeRate)).minus(D(i.unitCost!).times(D(i.quantity))),
+  );
   const perSale = D(input.channel.fixedFee ?? 0).plus(D(input.channel.shippingCost ?? 0));
-  return { profit: sum(lines).minus(perSale), skippedItems: input.items.length - known.length };
+  return {
+    profit: sum(lines).minus(perSale),
+    countedRevenue: sum(charged),
+    skippedItems: input.items.length - known.length,
+  };
 }

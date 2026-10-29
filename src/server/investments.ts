@@ -2,23 +2,29 @@ import "server-only";
 import { db } from "@/lib/db";
 import { pct, ZERO } from "@/lib/money";
 import { quoteProfit } from "@/lib/calc/investment";
+import { quoteTotals } from "@/lib/calc/quote";
 import { costProduct, getCostingContext, productInclude } from "./costing";
 
-export interface QuoteRecovery {
+/** Un presupuesto aceptado visto como venta: lo que se cobró y lo que dejó. */
+export interface QuoteSale {
   quoteId: string;
   number: number;
   clientName: string;
   acceptedAt: Date;
+  /** Total cobrado (con el descuento extra). */
+  total: string;
   profit: string;
+  /** Lo cobrado por los ítems con costo conocido (base del margen). */
+  countedRevenue: string;
   /** Ítems libres que no entraron en la cuenta (sin costo conocido). */
   skippedItems: number;
 }
 
 /**
- * Ganancia estimada de cada presupuesto aceptado desde `since`, con el costo de hoy de cada producto
- * y el canal de venta directa.
+ * Presupuestos aceptados desde `since` (todos si es null), con su ganancia estimada según el costo de
+ * hoy de cada producto y el canal de venta directa.
  */
-export async function getQuoteRecoveries(since: Date | null): Promise<QuoteRecovery[]> {
+export async function getQuoteSales(since: Date | null = null): Promise<QuoteSale[]> {
   const [ctx, quotes] = await Promise.all([
     getCostingContext(),
     db.quote.findMany({
@@ -35,7 +41,7 @@ export async function getQuoteRecoveries(since: Date | null): Promise<QuoteRecov
   const costs = new Map<string, string>();
 
   return quotes.map((q) => {
-    const { profit, skippedItems } = quoteProfit({
+    const { profit, countedRevenue, skippedItems } = quoteProfit({
       items: q.items.map((i) => {
         let unitCost: string | null = null;
         if (i.product) {
@@ -53,7 +59,9 @@ export async function getQuoteRecoveries(since: Date | null): Promise<QuoteRecov
       number: q.number,
       clientName: q.clientName,
       acceptedAt: q.acceptedAt ?? q.updatedAt,
+      total: quoteTotals(q.items, q.discountPercent).total.toString(),
       profit: profit.toString(),
+      countedRevenue: countedRevenue.toString(),
       skippedItems,
     };
   });

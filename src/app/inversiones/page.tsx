@@ -1,8 +1,22 @@
 import Link from "next/link";
-import { CalendarClockIcon, FileTextIcon, PencilIcon, PiggyBankIcon, PlusIcon, TrendingUpIcon, WalletIcon } from "lucide-react";
+import {
+  CalendarClockIcon,
+  FileTextIcon,
+  ShoppingBagIcon,
+  PencilIcon,
+  PiggyBankIcon,
+  PlusIcon,
+  TrendingUpIcon,
+  WalletIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState, InfoTooltip, PageHeader, StatCard } from "@/components/shared/ui-bits";
+import {
+  EmptyState,
+  InfoTooltip,
+  PageHeader,
+  StatCard,
+} from "@/components/shared/ui-bits";
 import { Money } from "@/components/shared/money";
 import { ConfirmDelete } from "@/components/shared/confirm-delete";
 import { MovementDialog } from "@/components/investments/movement-dialog";
@@ -12,23 +26,41 @@ import { db } from "@/lib/db";
 import { investmentSummary } from "@/lib/calc/investment";
 import { formatQuoteNumber } from "@/lib/quote-text";
 import { D, formatPercent, roundCents, sum } from "@/lib/money";
-import { getQuoteRecoveries } from "@/server/investments";
+import { getQuoteSales, type QuoteSale } from "@/server/investments";
 
 export const metadata = { title: "Inversiones" };
 
-const dateFmt = new Intl.DateTimeFormat("es-AR", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" });
-const monthFmt = new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const monthFmt = new Intl.DateTimeFormat("es-AR", {
+  month: "long",
+  year: "numeric",
+});
 
-type Movement = Awaited<ReturnType<typeof db.investmentMovement.findMany>>[number];
+type Movement = Awaited<
+  ReturnType<typeof db.investmentMovement.findMany>
+>[number];
 
-function MovementList({ movements, kind }: { movements: Movement[]; kind: Movement["kind"] }) {
+function MovementList({
+  movements,
+  kind,
+}: {
+  movements: Movement[];
+  kind: Movement["kind"];
+}) {
   return (
     <ul className="divide-y">
       {movements.map((m) => (
         <li key={m.id} className="flex items-center gap-3 px-4 py-3">
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{m.description}</p>
-            <p className="text-xs text-muted-foreground">{dateFmt.format(m.date)}</p>
+            <p className="text-xs text-muted-foreground">
+              {dateFmt.format(m.date)}
+            </p>
           </div>
           <Money value={m.amount.toString()} className="font-semibold" />
           <MovementDialog
@@ -41,29 +73,139 @@ function MovementList({ movements, kind }: { movements: Movement[]; kind: Moveme
               date: m.date.toISOString().slice(0, 10),
             }}
             trigger={
-              <Button variant="ghost" size="icon-sm" aria-label={`Editar ${m.description}`}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Editar ${m.description}`}
+              >
                 <PencilIcon />
               </Button>
             }
           />
-          <ConfirmDelete title={`¿Eliminar “${m.description}”?`} onConfirm={deleteInvestmentMovement.bind(null, m.id)} />
+          <ConfirmDelete
+            title={`¿Eliminar “${m.description}”?`}
+            onConfirm={deleteInvestmentMovement.bind(null, m.id)}
+          />
         </li>
       ))}
     </ul>
   );
 }
 
+/** Tus ventas (presupuestos aceptados): cuántas, cuánto vendiste y cuánto te dejaron. */
+function SalesCard({ sales }: { sales: QuoteSale[] }) {
+  const monthStart = new Date(
+    new Date().getFullYear(),
+    new Date().getMonth(),
+    1,
+  );
+  const totals = (list: QuoteSale[]) => {
+    const profit = sum(list.map((q) => q.profit));
+    const counted = sum(list.map((q) => q.countedRevenue));
+    return {
+      count: list.length,
+      total: sum(list.map((q) => q.total)),
+      profit,
+      margin: counted.gt(0) ? profit.div(counted).times(100) : null,
+    };
+  };
+  const all = totals(sales);
+  const month = totals(sales.filter((q) => q.acceptedAt >= monthStart));
+  const skipped = sales.reduce((n, q) => n + q.skippedItems, 0);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1.5">
+          <ShoppingBagIcon className="size-4 text-muted-foreground" />
+          Tus ventas
+          <InfoTooltip>
+            Salen de los presupuestos aceptados. La ganancia es lo cobrado sin
+            IVA ni comisiones, menos lo que cuesta cada producto hoy.
+          </InfoTooltip>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        {sales.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Todavía no hay ventas. Cuando marques un{" "}
+            <Link href="/presupuestos" className="text-primary underline">
+              presupuesto
+            </Link>{" "}
+            como aceptado, aparece acá.
+          </p>
+        ) : (
+          <>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: "Ventas", value: all.count },
+                {
+                  label: "Total vendido",
+                  value: <Money value={all.total.toString()} decimals={0} />,
+                },
+                {
+                  label: "Ganancia",
+                  value: (
+                    <Money
+                      value={all.profit.toString()}
+                      decimals={0}
+                      className={
+                        all.profit.lt(0)
+                          ? "text-destructive"
+                          : "text-tinta dark:text-menta"
+                      }
+                    />
+                  ),
+                },
+                {
+                  label: "Margen",
+                  value: all.margin ? formatPercent(all.margin, 0) : "—",
+                },
+              ].map((x) => (
+                <div key={x.label} className="rounded-lg bg-muted/40 p-3">
+                  <dt className="text-xs text-muted-foreground">{x.label}</dt>
+                  <dd className="text-xl font-bold tabular-nums">{x.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs text-muted-foreground">
+              Este mes: {month.count} {month.count === 1 ? "venta" : "ventas"} ·{" "}
+              <Money value={month.total.toString()} decimals={0} /> vendido ·{" "}
+              <Money value={month.profit.toString()} decimals={0} /> de ganancia
+              {skipped > 0 &&
+                ` · ${skipped} ítem${skipped === 1 ? " libre" : "s libres"} sin costo no entran en la ganancia`}
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default async function InversionesPage() {
-  const movements = await db.investmentMovement.findMany({ orderBy: [{ date: "desc" }, { createdAt: "desc" }] });
+  const [movements, sales] = await Promise.all([
+    db.investmentMovement.findMany({
+      orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+    }),
+    getQuoteSales(),
+  ]);
   const investments = movements.filter((m) => m.kind === "INVESTMENT");
   const recoveries = movements.filter((m) => m.kind === "RECOVERY");
-  const firstInvestment = investments.length ? new Date(Math.min(...investments.map((m) => m.date.getTime()))) : null;
+  const firstInvestment = investments.length
+    ? new Date(Math.min(...investments.map((m) => m.date.getTime())))
+    : null;
   // Los presupuestos aceptados desde la primera inversión suman solos, con su ganancia estimada.
-  const quoteRecoveries = firstInvestment ? await getQuoteRecoveries(firstInvestment) : [];
+  const quoteRecoveries = firstInvestment
+    ? sales.filter((q) => q.acceptedAt >= firstInvestment)
+    : [];
   const fromQuotes = sum(quoteRecoveries.map((q) => q.profit));
   const s = investmentSummary([
     ...movements,
-    ...quoteRecoveries.map((q) => ({ kind: "RECOVERY" as const, amount: q.profit, date: q.acceptedAt })),
+    ...quoteRecoveries.map((q) => ({
+      kind: "RECOVERY" as const,
+      amount: q.profit,
+      date: q.acceptedAt,
+    })),
   ]);
   const done = investments.length > 0 && s.remaining.lte(0);
 
@@ -87,16 +229,29 @@ export default async function InversionesPage() {
       />
 
       {investments.length === 0 ? (
-        <EmptyState
-          icon={PiggyBankIcon}
-          title="Cargá lo que invertiste"
-          description="Máquinas, herramientas, stock inicial, el logo, la web… todo lo que pusiste antes de vender. Después vas sumando lo que recuperás."
-          example={<>Ej: Plastificadora $120.000 · Primer stock de papel $45.000 · Logo $30.000</>}
-        />
+        <div className="grid gap-4">
+          <EmptyState
+            icon={PiggyBankIcon}
+            title="Cargá lo que invertiste"
+            description="Máquinas, herramientas, stock inicial, el logo, la web… todo lo que pusiste antes de vender. Después vas sumando lo que recuperás."
+            example={
+              <>
+                Ej: Plastificadora $120.000 · Primer stock de papel $45.000 ·
+                Logo $30.000
+              </>
+            }
+          />
+          <SalesCard sales={sales} />
+        </div>
       ) : (
         <div className="grid gap-4">
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <StatCard label="Invertiste" icon={WalletIcon} accent="kraft" value={<Money value={s.invested.toString()} decimals={0} />} />
+            <StatCard
+              label="Invertiste"
+              icon={WalletIcon}
+              accent="kraft"
+              value={<Money value={s.invested.toString()} decimals={0} />}
+            />
             <StatCard
               label="Recuperaste"
               icon={TrendingUpIcon}
@@ -110,14 +265,25 @@ export default async function InversionesPage() {
               icon={PiggyBankIcon}
               accent="halo"
               tone={done ? "good" : "warn"}
-              value={<Money value={(done ? s.surplus : s.remaining).toString()} decimals={0} />}
+              value={
+                <Money
+                  value={(done ? s.surplus : s.remaining).toString()}
+                  decimals={0}
+                />
+              }
               hint={done ? "¡Ya recuperaste todo!" : undefined}
             />
             <StatCard
               label="Lo recuperás en"
               icon={CalendarClockIcon}
               accent="cielo"
-              value={done ? "Listo" : s.monthsLeft != null ? `${s.monthsLeft} ${s.monthsLeft === 1 ? "mes" : "meses"}` : "—"}
+              value={
+                done
+                  ? "Listo"
+                  : s.monthsLeft != null
+                    ? `${s.monthsLeft} ${s.monthsLeft === 1 ? "mes" : "meses"}`
+                    : "—"
+              }
               hint={
                 done
                   ? undefined
@@ -132,7 +298,9 @@ export default async function InversionesPage() {
             <CardContent className="grid gap-2">
               <div className="flex items-baseline justify-between text-sm">
                 <span className="font-medium">Recupero</span>
-                <span className="tabular-nums text-muted-foreground">{formatPercent(s.progressPercent, 0)}</span>
+                <span className="tabular-nums text-muted-foreground">
+                  {formatPercent(s.progressPercent, 0)}
+                </span>
               </div>
               <div
                 className="h-3 overflow-hidden rounded-full bg-muted"
@@ -152,13 +320,21 @@ export default async function InversionesPage() {
                   Desde {dateFmt.format(s.startedAt)}
                   {s.monthlyPace && (
                     <>
-                      {" "}· venís recuperando <Money value={s.monthlyPace.toString()} decimals={0} /> por mes en promedio
+                      {" "}
+                      · venís recuperando{" "}
+                      <Money
+                        value={s.monthlyPace.toString()}
+                        decimals={0}
+                      />{" "}
+                      por mes en promedio
                     </>
                   )}
                 </p>
               )}
             </CardContent>
           </Card>
+
+          <SalesCard sales={sales} />
 
           <div className="grid gap-4 lg:grid-cols-[1fr_1fr_320px]">
             <Card className="gap-0 self-start py-0">
@@ -183,8 +359,10 @@ export default async function InversionesPage() {
                 <CardTitle className="flex items-center gap-1.5">
                   Lo que recuperaste
                   <InfoTooltip>
-                    Los presupuestos aceptados suman solos: lo cobrado (sin IVA ni comisiones) menos lo que cuesta
-                    cada producto hoy. A mano cargá solo la ganancia de ventas que no pasaron por un presupuesto.
+                    Los presupuestos aceptados suman solos: lo cobrado (sin IVA
+                    ni comisiones) menos lo que cuesta cada producto hoy. A mano
+                    cargá solo la ganancia de ventas que no pasaron por un
+                    presupuesto.
                   </InfoTooltip>
                 </CardTitle>
               </CardHeader>
@@ -197,21 +375,29 @@ export default async function InversionesPage() {
                   <ul className="divide-y border-b">
                     {quoteRecoveries.map((q) => (
                       <li key={q.quoteId}>
-                        <Link href={`/presupuestos/${q.quoteId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+                        <Link
+                          href={`/presupuestos/${q.quoteId}`}
+                          className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50"
+                        >
                           <FileTextIcon className="size-4 shrink-0 text-muted-foreground" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-medium">
                               {formatQuoteNumber(q.number)} · {q.clientName}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Aceptado el {dateFmt.format(q.acceptedAt)}
+                              {dateFmt.format(q.acceptedAt)} · vendido{" "}
+                              <Money value={q.total} decimals={0} />
                               {q.skippedItems > 0 &&
                                 ` · ${q.skippedItems} ítem${q.skippedItems === 1 ? " libre no cuenta" : "s libres no cuentan"}`}
                             </p>
                           </div>
                           <Money
                             value={q.profit}
-                            className={D(q.profit).lt(0) ? "font-semibold text-destructive" : "font-semibold"}
+                            className={
+                              D(q.profit).lt(0)
+                                ? "font-semibold text-destructive"
+                                : "font-semibold"
+                            }
                           />
                         </Link>
                       </li>
@@ -231,7 +417,8 @@ export default async function InversionesPage() {
               )}
               {recoveries.length === 0 && quoteRecoveries.length === 0 && (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                  Todavía nada. Cuando aceptes un presupuesto, su ganancia aparece acá sola.
+                  Todavía nada. Cuando aceptes un presupuesto, su ganancia
+                  aparece acá sola.
                 </p>
               )}
               <div className="border-t p-3">
@@ -254,7 +441,11 @@ export default async function InversionesPage() {
                 <CardContent>
                   <RecoverySimulator
                     remaining={s.remaining.toString()}
-                    suggested={s.monthlyPace ? roundCents(s.monthlyPace).toString() : null}
+                    suggested={
+                      s.monthlyPace
+                        ? roundCents(s.monthlyPace).toString()
+                        : null
+                    }
                   />
                 </CardContent>
               </Card>
