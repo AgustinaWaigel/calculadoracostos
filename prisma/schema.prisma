@@ -156,6 +156,25 @@ enum LifeUnit {
   HOURS
 }
 
+// ───────── Inversiones ─────────
+
+/// Plata que pusiste para arrancar (o para crecer) y lo que vas recuperando de ella.
+model InvestmentMovement {
+  id          String         @id @default(cuid())
+  kind        InvestmentKind
+  description String
+  amount      Decimal
+  date        DateTime
+  createdAt   DateTime       @default(now())
+
+  @@index([date])
+}
+
+enum InvestmentKind {
+  INVESTMENT
+  RECOVERY
+}
+
 // ───────── Productos (receta / BOM) ─────────
 
 model Product {
@@ -254,6 +273,8 @@ model Quote {
   notes           String?
   validUntil      DateTime
   status          QuoteStatus @default(DRAFT)
+  /// Cuándo pasó a aceptado (su ganancia cuenta como recupero de la inversión desde esa fecha).
+  acceptedAt      DateTime?
   discountPercent Decimal     @default(0)
   /// Descuentos por cantidad propios del presupuesto: [{ minQuantity, discountPercent }]. Se copian de Ajustes al crearlo.
   volumeTiers     Json        @default("[]")

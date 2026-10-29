@@ -31,6 +31,7 @@ const backupSchema = z.object({
     quoteItems: rows,
     // Opcional: los backups anteriores a la calculadora de impresión no la traen.
     printInks: rows.default([]),
+    investmentMovements: rows.default([]),
   }),
 });
 
@@ -67,6 +68,7 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
       db.volumeTier.deleteMany(),
       db.business.deleteMany(),
       db.printInk.deleteMany(),
+      db.investmentMovement.deleteMany(),
       db.business.createMany({ data: as(d.business) }),
       db.supply.createMany({ data: as(d.supplies) }),
       db.supplyPriceHistory.createMany({ data: as(d.supplyPriceHistory) }),
@@ -83,6 +85,7 @@ export async function importBackup(json: string): Promise<ActionResult<{ counts:
       db.quote.createMany({ data: as(d.quotes) }),
       db.quoteItem.createMany({ data: as(d.quoteItems) }),
       db.printInk.createMany({ data: as(d.printInks) }),
+      db.investmentMovement.createMany({ data: as(d.investmentMovements) }),
     ]);
   } catch (e) {
     return fail(`No se pudo restaurar: ${errorMessage(e).slice(0, 200)}`);
