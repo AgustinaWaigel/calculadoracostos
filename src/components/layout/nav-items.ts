@@ -1,5 +1,6 @@
 import {
   CalculatorIcon,
+  ClipboardListIcon,
   ClockIcon,
   FileTextIcon,
   HomeIcon,
@@ -86,6 +87,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/costos-fijos", label: "Costos fijos", icon: ReceiptIcon, accent: "cielo" },
   { href: "/productos", label: "Productos", icon: ShapesIcon, accent: "lavanda", mobile: true },
   { href: "/presupuestos", label: "Presupuestos", icon: FileTextIcon, accent: "amanecer", mobile: true },
+  { href: "/pedidos", label: "Pedidos", icon: ClipboardListIcon, accent: "halo" },
   { href: "/ventas", label: "Ventas", icon: ShoppingBagIcon, accent: "menta" },
   { href: "/inversiones", label: "Inversiones", icon: PiggyBankIcon, accent: "kraft" },
   { href: "/impresion", label: "Impresión", icon: PrinterIcon, accent: "menta" },
