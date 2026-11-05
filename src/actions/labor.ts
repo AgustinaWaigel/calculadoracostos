@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { laborProfileSchema, marketRateSchema } from "@/lib/schemas";
 import { fail, ok, zodFail, type ActionResult } from "@/lib/action-result";
@@ -47,4 +48,17 @@ export async function deleteMarketRate(id: string): Promise<ActionResult> {
   await db.marketRate.delete({ where: { id } });
   revalidateLabor();
   return ok(undefined, "Referencia eliminada");
+}
+
+const laborDefaultSchema = z.object({ isOwn: z.boolean(), applyToAll: z.boolean() });
+
+/** Quién hace el trabajo. Opcionalmente lo aplica a los perfiles que ya existen. */
+export async function saveLaborDefault(input: unknown): Promise<ActionResult> {
+  const parsed = laborDefaultSchema.safeParse(input);
+  if (!parsed.success) return fail("Datos inválidos");
+  const { isOwn, applyToAll } = parsed.data;
+  await db.business.update({ where: { id: "singleton" }, data: { laborIsOwn: isOwn } });
+  if (applyToAll) await db.laborProfile.updateMany({ data: { isOwn } });
+  revalidatePath("/", "layout");
+  return ok(undefined, applyToAll ? "Guardado y aplicado a todos tus perfiles" : "Guardado");
 }

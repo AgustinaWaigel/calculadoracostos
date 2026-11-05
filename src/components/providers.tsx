@@ -12,15 +12,32 @@ export function useDolarRates() {
   return useContext(DolarContext);
 }
 
-export function Providers({ children, rates }: { children: React.ReactNode; rates: DolarRates }) {
+const LaborIsOwnContext = createContext(true);
+
+/** El trabajo lo hace el dueño (ganancia) o se le paga a alguien (costo): default de los perfiles nuevos. */
+export function useLaborIsOwn() {
+  return useContext(LaborIsOwnContext);
+}
+
+export function Providers({
+  children,
+  rates,
+  laborIsOwn,
+}: {
+  children: React.ReactNode;
+  rates: DolarRates;
+  laborIsOwn: boolean;
+}) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <DolarContext.Provider value={rates}>
-        <TooltipProvider delayDuration={200}>
-          {children}
-          <Toaster richColors position="top-center" />
-        </TooltipProvider>
-      </DolarContext.Provider>
+      <LaborIsOwnContext.Provider value={laborIsOwn}>
+        <DolarContext.Provider value={rates}>
+          <TooltipProvider delayDuration={200}>
+            {children}
+            <Toaster richColors position="top-center" />
+          </TooltipProvider>
+        </DolarContext.Provider>
+      </LaborIsOwnContext.Provider>
     </ThemeProvider>
   );
 }

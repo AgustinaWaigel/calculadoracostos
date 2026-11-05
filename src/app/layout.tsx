@@ -39,7 +39,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang="es-AR" suppressHydrationWarning className={`${karla.variable} ${londrina.variable}`}>
       <body className="antialiased">
-        <Providers rates={rates}>
+        <Providers rates={rates} laborIsOwn={business.laborIsOwn}>
           <AppShell businessName={business.name} logoUrl={business.logoUrl} userEmail={userEmail}>{children}</AppShell>
         </Providers>
         <ServiceWorkerRegister />

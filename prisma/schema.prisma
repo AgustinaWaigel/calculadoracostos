@@ -26,6 +26,8 @@ model Business {
   /// Cómo se reparten los fijos: por tamaño (unidades normales) o por minutos de trabajo.
   fixedAllocation      FixedAllocation @default(SIZE)
   monthlyHoursEstimate Int             @default(80)
+  /// Quién hace el trabajo por defecto: true = lo hace el dueño (ganancia); false = se le paga a alguien (costo).
+  laborIsOwn           Boolean         @default(true)
   defaultMarginPercent Decimal         @default(40)
   pricingMode          PricingMode     @default(MARGIN)
   roundTo              Decimal         @default(10)
