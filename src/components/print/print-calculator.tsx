@@ -224,7 +224,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
               {inks.fields.map((f, i) => (
                 <div
                   key={f.id}
-                  className="grid grid-cols-[32px_minmax(0,1fr)_auto] items-start gap-2 sm:grid-cols-[32px_minmax(0,1fr)_130px_150px_100px_auto]"
+                  className="grid grid-cols-[32px_minmax(0,1fr)_minmax(0,1fr)_auto] items-start gap-2 sm:grid-cols-[32px_minmax(0,1fr)_130px_150px_100px_auto]"
                 >
                   {/* Controlado: si queda sin valor, el navegador lo pone en #000000. */}
                   <Controller
@@ -241,7 +241,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                       />
                     )}
                   />
-                  <div>
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
                     <Input aria-label="Nombre" placeholder="Negro" {...form.register(`inks.${i}.name`)} />
                     <FieldError message={inkErrors?.[i]?.name?.message} />
                   </div>
@@ -268,7 +268,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                           form.setValue(`inks.${i}.color`, CHANNEL_COLORS[v as InkChannel]);
                         }}
                       >
-                        <SelectTrigger className="col-span-3 w-full sm:col-span-1" aria-label="Canal de color">
+                        <SelectTrigger className="col-span-4 w-full sm:col-span-1" aria-label="Canal de color">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -305,7 +305,7 @@ export function PrintCalculator({ savedInks, papers }: { savedInks: SavedInk[]; 
                     </div>
                     <FieldError message={inkErrors?.[i]?.bottlePrice?.message} />
                   </div>
-                  <div>
+                  <div className="col-span-2 min-w-0 sm:col-span-1">
                     <Input inputMode="numeric" className="min-w-0" aria-label="Rendimiento en páginas" placeholder="Páginas" {...form.register(`inks.${i}.yieldPages`)} />
                     <FieldError message={inkErrors?.[i]?.yieldPages?.message} />
                   </div>
