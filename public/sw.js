@@ -1,5 +1,6 @@
 // Service worker mínimo: hace la app instalable y muestra la última versión vista si no hay conexión.
-const CACHE = "costos-v1";
+// Cambiar la versión borra la caché vieja al activarse (v1 podía tener errores guardados).
+const CACHE = "costos-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -30,8 +31,12 @@ self.addEventListener("fetch", (event) => {
         (hit) =>
           hit ||
           fetch(request).then((res) => {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(request, copy));
+            // Solo lo que llegó bien: si se guarda un 404 (ej: CSS de una versión anterior), la página
+            // queda sin estilos hasta forzar la recarga.
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(request, copy));
+            }
             return res;
           }),
       ),
@@ -44,8 +49,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, copy));
+          }
           return res;
         })
         .catch(async () => (await caches.match(request)) || (await caches.match(OFFLINE_URL))),
